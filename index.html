@@ -1237,6 +1237,19 @@ function App() {
       if (cat.includes("Wells")) return 0.05;
       return 0;
     };
+    const getCatColorHex = (cat) => {
+      if (cat.includes("Premium")) return "#D97706";
+      if (cat.includes("Wells")) return "#0D9488";
+      if (cat.includes("Seltzer")) return "#0284C7";
+      if (cat.includes("Beers")) return "#2563EB";
+      if (cat.includes("Wines")) return "#7C3AED";
+      if (cat.includes("Non Alcoholic")) return "#475569";
+      return "#64748B";
+    };
+    const hexToRgb = (hex) => {
+      const n = parseInt(hex.slice(1), 16);
+      return [n >> 16 & 255, n >> 8 & 255, n & 255];
+    };
     Object.entries(categorySummary).forEach(([cat, stats]) => {
       const weight = getWeight(cat);
       let catScore = 100;
@@ -1248,7 +1261,8 @@ function App() {
     });
     const score = weightedScore;
     const grade = score >= 95 ? "A" : score >= 85 ? "B" : "C";
-    const scoreColor = score >= 95 ? [34, 197, 94] : score >= 85 ? [234, 179, 8] : [239, 68, 68];
+    const scoreColorHex = score >= 95 ? "#0D9488" : score >= 85 ? "#D97706" : "#E11D48";
+    const scoreColor = hexToRgb(scoreColorHex);
     items.sort((a, b) => a.diff - b.diff);
     const topLosses = items.filter((i) => i.diff < 0).slice(0, 5);
     const createChartImage = (config) => {
@@ -1260,7 +1274,7 @@ function App() {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
-        const pdfConfig = __spreadProps(__spreadValues({}, config), { options: __spreadProps(__spreadValues({}, config.options), { animation: false, responsive: false, devicePixelRatio: 2, color: "#000000", plugins: __spreadProps(__spreadValues({}, (_a = config.options) == null ? void 0 : _a.plugins), { legend: __spreadProps(__spreadValues({}, (_c = (_b = config.options) == null ? void 0 : _b.plugins) == null ? void 0 : _c.legend), { labels: { color: "#000000", font: { size: 14 } } }), title: __spreadProps(__spreadValues({}, (_e = (_d = config.options) == null ? void 0 : _d.plugins) == null ? void 0 : _e.title), { color: "#000000", font: { size: 18, weight: "bold" } }), datalabels: { color: "#000000" } }), scales: config.type !== "pie" ? { x: { ticks: { color: "#000000" }, grid: { color: "#cccccc" } }, y: { ticks: { color: "#000000" }, grid: { color: "#cccccc" } } } : {} }) });
+        const pdfConfig = __spreadProps(__spreadValues({}, config), { options: __spreadProps(__spreadValues({}, config.options), { animation: false, responsive: false, devicePixelRatio: 2, color: "#1E2433", plugins: __spreadProps(__spreadValues({}, (_a = config.options) == null ? void 0 : _a.plugins), { legend: __spreadProps(__spreadValues({}, (_c = (_b = config.options) == null ? void 0 : _b.plugins) == null ? void 0 : _c.legend), { labels: { color: "#1E2433", font: { size: 13, family: "Arial" }, boxWidth: 12, padding: 12 } }), title: __spreadProps(__spreadValues({}, (_e = (_d = config.options) == null ? void 0 : _d.plugins) == null ? void 0 : _e.title), { color: "#1E2433", font: { size: 17, weight: "bold", family: "Arial" } }), datalabels: { color: "#1E2433" } }), scales: config.type !== "pie" && config.type !== "doughnut" ? { x: { ticks: { color: "#6B7588", font: { family: "Arial" } }, grid: { color: "#E7EBF2" } }, y: { ticks: { color: "#1E2433", font: { family: "Arial", weight: "600" } }, grid: { display: false } } } : {} }) });
         if (window.pdfChart) window.pdfChart.destroy();
         window.pdfChart = new Chart(ctx, pdfConfig);
         setTimeout(() => {
@@ -1276,111 +1290,139 @@ function App() {
         }, 500);
       });
     };
-    const chartImg1 = await createChartImage({ type: "pie", data: { labels: Object.keys(catMap).map((k) => k.split(" ")[0]), datasets: [{ data: Object.values(catMap), backgroundColor: ["#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#6366f1", "#ef4444"] }] }, options: { plugins: { title: { display: true, text: "Sales Share" }, legend: { position: "bottom" } } } });
-    const chartImg2 = await createChartImage({ type: "bar", data: { labels: topLosses.map((i) => i.name), datasets: [{ label: "Loss (Units)", data: topLosses.map((i) => i.diff), backgroundColor: "#ef4444" }] }, options: { indexAxis: "y", plugins: { title: { display: true, text: "Top 5 Product Losses" }, legend: { display: false } } } });
+    const catColorList = Object.keys(catMap).map(getCatColorHex);
+    const chartImg1 = await createChartImage({ type: "doughnut", data: { labels: Object.keys(catMap).map((k) => k.split(" ")[0]), datasets: [{ data: Object.values(catMap), backgroundColor: catColorList, borderColor: "#ffffff", borderWidth: 3 }] }, options: { cutout: "62%", plugins: { title: { display: true, text: "Sales Share by Category" }, legend: { position: "bottom" } } } });
+    const chartImg2 = await createChartImage({ type: "bar", data: { labels: topLosses.map((i) => i.name), datasets: [{ label: "Loss (Units)", data: topLosses.map((i) => i.diff), backgroundColor: "#F43F5E", borderRadius: 6 }] }, options: { indexAxis: "y", plugins: { title: { display: true, text: "Top 5 Product Losses" }, legend: { display: false } } } });
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const dateText = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const PAGE_W = 210;
+    const addFooter = () => {
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= pageCount; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(231, 235, 242);
+        doc.setLineWidth(0.3);
+        doc.line(15, 285, 195, 285);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.setFont("helvetica", "normal");
+        doc.text("Master Control \xB7 Bar Inventory System", 15, 291);
+        doc.text(`Page ${p} of ${pageCount}`, 195, 291, { align: "right" });
+      }
+    };
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, PAGE_W, 38, "F");
+    doc.setFillColor(217, 119, 6);
+    doc.rect(0, 36, PAGE_W, 2, "F");
     if (logo && logo.startsWith("data:image")) {
       try {
-        doc.addImage(logo, "JPEG", 15, 10, 15, 15);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(13, 8, 22, 22, 3, 3, "F");
+        doc.addImage(logo, "JPEG", 15, 10, 18, 18);
       } catch (err) {
       }
     }
-    doc.setFontSize(22);
-    doc.setTextColor(40);
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.text("PALMAS TROPICAL ESCAPE", 35, 20);
+    doc.text("PALMAS TROPICAL ESCAPE", 42, 19);
     doc.setFontSize(10);
-    doc.setTextColor(100);
+    doc.setTextColor(219, 234, 254);
     doc.setFont("helvetica", "normal");
-    doc.text(`Report Date: ${dateText}`, 35, 26);
-    doc.line(15, 30, 195, 30);
-    doc.setFillColor(245, 247, 250);
-    doc.roundedRect(15, 35, 40, 30, 2, 2, "F");
+    doc.text("Executive Inventory Report", 42, 26);
     doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text("WEIGHTED RATING", 35, 42, { align: "center" });
-    doc.setFontSize(24);
-    doc.setTextColor(...scoreColor);
+    doc.setTextColor(219, 234, 254);
+    doc.text(dateText, 42, 32);
+    let y0 = 48;
+    const kpiCard = (x, w, label, value, sub, colorHex, big) => {
+      const rgb = hexToRgb(colorHex);
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(231, 235, 242);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(x, y0, w, 32, 3, 3, "FD");
+      doc.setFillColor(...rgb);
+      doc.roundedRect(x, y0, 3, 32, 1.5, 1.5, "F");
+      doc.setFontSize(8);
+      doc.setTextColor(107, 117, 136);
+      doc.setFont("helvetica", "bold");
+      doc.text(label, x + w / 2, y0 + 8, { align: "center" });
+      doc.setFontSize(big ? 22 : 17);
+      doc.setTextColor(...rgb);
+      doc.setFont("helvetica", "bold");
+      doc.text(value, x + w / 2, y0 + 20, { align: "center" });
+      doc.setFontSize(7.5);
+      doc.setTextColor(150);
+      doc.setFont("helvetica", "normal");
+      doc.text(sub, x + w / 2, y0 + 27, { align: "center" });
+    };
+    kpiCard(15, 40, "WEIGHTED RATING", grade, `${score.toFixed(1)}%`, scoreColorHex, true);
+    kpiCard(59, 40, "CONSUMED", totalConsumed.toFixed(1), "Units Used", "#2563EB");
+    kpiCard(103, 40, "SOLD (POS)", totalSold.toFixed(1), "Units Sold", "#7C3AED");
+    kpiCard(147, 48, "VARIANCE", `${totalDiff > 0 ? "+" : ""}${totalDiff.toFixed(1)}`, totalDiff < 0 ? "Net Loss" : "Net Gain", totalDiff < 0 ? "#E11D48" : "#0D9488");
+    y0 += 40;
+    doc.setFontSize(11);
+    doc.setTextColor(30, 36, 51);
     doc.setFont("helvetica", "bold");
-    doc.text(grade, 35, 53, { align: "center" });
-    doc.setFontSize(10);
-    doc.text(`${score.toFixed(1)}%`, 35, 60, { align: "center" });
-    doc.setFillColor(245, 247, 250);
-    doc.roundedRect(60, 35, 40, 30, 2, 2, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.setFont("helvetica", "normal");
-    doc.text("TOTAL CONSUMED", 80, 42, { align: "center" });
-    doc.setFontSize(16);
-    doc.setTextColor(40);
-    doc.setFont("helvetica", "bold");
-    doc.text(totalConsumed.toFixed(1), 80, 52, { align: "center" });
-    doc.setFontSize(8);
-    doc.text("Units Used", 80, 58, { align: "center" });
-    doc.setFillColor(245, 247, 250);
-    doc.roundedRect(105, 35, 40, 30, 2, 2, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.setFont("helvetica", "normal");
-    doc.text("TOTAL SOLD", 125, 42, { align: "center" });
-    doc.setFontSize(16);
-    doc.setTextColor(79, 70, 229);
-    doc.setFont("helvetica", "bold");
-    doc.text(totalSold.toFixed(1), 125, 52, { align: "center" });
-    doc.setFontSize(8);
-    doc.setTextColor(40);
-    doc.text("Units Sold (POS)", 125, 58, { align: "center" });
-    doc.setFillColor(totalDiff < 0 ? 254 : 240, totalDiff < 0 ? 242 : 253, totalDiff < 0 ? 242 : 244);
-    doc.roundedRect(150, 35, 45, 30, 2, 2, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.setFont("helvetica", "normal");
-    doc.text("VARIANCE", 172.5, 42, { align: "center" });
-    doc.setFontSize(16);
-    doc.setTextColor(totalDiff < 0 ? 220 : 34, totalDiff < 0 ? 38 : 139, 38);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${totalDiff > 0 ? "+" : ""}${totalDiff.toFixed(1)}`, 172.5, 52, { align: "center" });
-    doc.setFontSize(8);
-    doc.text(totalDiff < 0 ? "Loss" : "Gain", 172.5, 58, { align: "center" });
+    doc.text("Category Breakdown", 15, y0);
     const catSummaryData = Object.entries(categorySummary).map(([cat, vals]) => [cat, vals.used.toFixed(1), vals.sold.toFixed(1), vals.variance.toFixed(1), `${vals.used > 0 ? (vals.variance / vals.used * 100).toFixed(1) : "0.0"}%`]);
-    doc.autoTable({ startY: 75, head: [["Category", "Used", "Sold", "Variance", "% Var"]], body: catSummaryData, theme: "grid", headStyles: { fillColor: [55, 65, 81], textColor: 255, fontStyle: "bold" }, styles: { fontSize: 9, cellPadding: 3 }, columnStyles: { 3: { fontStyle: "bold" }, 4: { halign: "right" } }, didParseCell: function(data2) {
-      if (data2.column.index === 3) {
+    doc.autoTable({ startY: y0 + 4, head: [["Category", "Used", "Sold", "Variance", "% Var"]], body: catSummaryData, theme: "grid", headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: "bold", fontSize: 9 }, styles: { fontSize: 9, cellPadding: 3.5, lineColor: [231, 235, 242], lineWidth: 0.3 }, alternateRowStyles: { fillColor: [248, 250, 252] }, columnStyles: { 3: { fontStyle: "bold" }, 4: { halign: "right" } }, didParseCell: function(data2) {
+      if (data2.column.index === 3 && data2.section === "body") {
         const val = parseFloat(data2.cell.raw);
-        data2.cell.styles.textColor = val < 0 ? [220, 38, 38] : [22, 163, 74];
+        data2.cell.styles.textColor = val < 0 ? [225, 29, 72] : [13, 148, 136];
+      }
+      if (data2.column.index === 0 && data2.section === "body") {
+        data2.cell.styles.textColor = [30, 36, 51];
+        data2.cell.styles.fontStyle = "bold";
       }
     } });
     let yPos = doc.lastAutoTable.finalY + 10;
+    if (yPos > 220) {
+      doc.addPage();
+      yPos = 20;
+    }
     if (chartImg1) {
-      doc.addImage(chartImg1, "JPEG", 15, yPos, 80, 60);
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(231, 235, 242);
+      doc.roundedRect(15, yPos, 85, 65, 3, 3, "FD");
+      doc.addImage(chartImg1, "JPEG", 17.5, yPos + 2.5, 80, 60);
     }
     if (chartImg2) {
-      doc.addImage(chartImg2, "JPEG", 105, yPos, 90, 60);
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(231, 235, 242);
+      doc.roundedRect(103, yPos, 92, 65, 3, 3, "FD");
+      doc.addImage(chartImg2, "JPEG", 105.5, yPos + 2.5, 87, 60);
     }
     doc.addPage();
-    doc.setFontSize(16);
-    doc.setTextColor(40);
-    doc.text("Top Loss Leaders", 15, 20);
-    doc.autoTable({ startY: 30, head: [["Item Name", "Category", "Missing Units"]], body: topLosses.map((i) => [i.name, i.category, i.diff.toFixed(2)]), theme: "striped", headStyles: { fillColor: [220, 38, 38] }, styles: { fontSize: 10 } });
+    doc.setFillColor(225, 29, 72);
+    doc.rect(0, 0, PAGE_W, 22, "F");
+    doc.setFontSize(15);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("Top Loss Leaders", 15, 14);
+    doc.autoTable({ startY: 30, head: [["Item Name", "Category", "Missing Units"]], body: topLosses.map((i) => [i.name, i.category, i.diff.toFixed(2)]), theme: "grid", headStyles: { fillColor: [225, 29, 72], textColor: 255, fontStyle: "bold" }, styles: { fontSize: 10, cellPadding: 3.5, lineColor: [231, 235, 242] }, alternateRowStyles: { fillColor: [255, 241, 242] }, columnStyles: { 2: { fontStyle: "bold", textColor: [225, 29, 72] } } });
     doc.addPage();
-    doc.setFontSize(16);
-    doc.setTextColor(40);
-    doc.text("Detailed Inventory Report", 15, 20);
-    doc.autoTable({ startY: 30, head: [["Product", "Cat", "Start", "Buy", "End", "Used", "Sold", "Diff"]], body: items.map((i) => [i.name, i.category.split(" ")[0], i.totalStart, i.purchases || 0, i.totalPhys, i.systemConsumption.toFixed(2), i.sales.toFixed(2), i.diff.toFixed(2)]), styles: { fontSize: 8, cellPadding: 2, textColor: [0, 0, 0] }, headStyles: { fillColor: [30, 30, 30], textColor: 255 }, didParseCell: function(data2) {
+    doc.setFillColor(30, 36, 51);
+    doc.rect(0, 0, PAGE_W, 22, "F");
+    doc.setFontSize(15);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("Detailed Inventory Report", 15, 14);
+    doc.autoTable({ startY: 30, head: [["Product", "Cat", "Start", "Buy", "End", "Used", "Sold", "Diff"]], body: items.map((i) => [i.name, i.category.split(" ")[0], i.totalStart, i.purchases || 0, i.totalPhys, i.systemConsumption.toFixed(2), i.sales.toFixed(2), i.diff.toFixed(2)]), theme: "grid", styles: { fontSize: 8, cellPadding: 2.5, textColor: [30, 36, 51], lineColor: [231, 235, 242], lineWidth: 0.2 }, headStyles: { fillColor: [30, 36, 51], textColor: 255 }, alternateRowStyles: { fillColor: [248, 250, 252] }, didParseCell: function(data2) {
       if (data2.section === "body" && data2.column.index === 7) {
         const val = parseFloat(data2.cell.raw);
         if (val < -0.1) {
-          data2.cell.styles.fillColor = [255, 230, 230];
-          data2.cell.styles.textColor = [180, 0, 0];
+          data2.cell.styles.fillColor = [255, 228, 230];
+          data2.cell.styles.textColor = [190, 18, 60];
           data2.cell.styles.fontStyle = "bold";
         } else if (val > 0.1) {
-          data2.cell.styles.fillColor = [230, 255, 230];
-          data2.cell.styles.textColor = [0, 100, 0];
+          data2.cell.styles.fillColor = [209, 250, 229];
+          data2.cell.styles.textColor = [4, 120, 87];
           data2.cell.styles.fontStyle = "bold";
         }
       }
     } });
+    addFooter();
     doc.save(`Executive_Report_${dateText.replace(/ /g, "_")}.pdf`);
     showNotification("REPORT EXPORTED");
   };
