@@ -1771,6 +1771,31 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
       ]
     });
   };
+  const PROCUREMENT_ORDER = [
+    "Bacardi Light",
+    "Long Island Tea Mix",
+    "Barton Naturals Vodka",
+    "Buchanans 12",
+    "Casamigos Blanco",
+    "Casamigos Reposado",
+    "Apple Crown Royal",
+    "Don Julio Blanco",
+    "Don Julio Reposado",
+    "Espolon Reposado",
+    "Espolon Blanco",
+    "Fernet Branca",
+    "Grey Goose",
+    "Hennessy VS",
+    "Jack Daniels Black",
+    "Jagermeister",
+    "Jameson",
+    "Johnnie Walker Black",
+    "Montezuma White",
+    "Patron Reposado",
+    "Patron Silver",
+    "Remy Martin",
+    "Tito's Texas Vodka"
+  ];
   const generateShoppingList = () => {
     const toBuy = [];
     data.forEach((cat) => {
@@ -1801,6 +1826,13 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
           }
         }
       });
+    });
+    toBuy.sort((a, b) => {
+      const ia = PROCUREMENT_ORDER.indexOf(a.name);
+      const ib = PROCUREMENT_ORDER.indexOf(b.name);
+      const ra = ia === -1 ? Infinity : ia;
+      const rb = ib === -1 ? Infinity : ib;
+      return ra - rb;
     });
     setShoppingItems(toBuy);
     setShowShopping(true);
