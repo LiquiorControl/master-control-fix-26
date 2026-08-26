@@ -239,6 +239,14 @@ const PAR_LEVELS = {
   "Ginger Ale": 24,
   "Water Bottle": 96
 };
+const BAR2_PAR_LEVEL = 1;
+const getBar1Target = (name) => PAR_LEVELS[name];
+const getBar2Target = (name) => PAR_LEVELS[name] !== void 0 ? BAR2_PAR_LEVEL : void 0;
+const getTotalTarget = (name) => {
+  const b1 = getBar1Target(name);
+  if (b1 === void 0) return void 0;
+  return b1 + BAR2_PAR_LEVEL;
+};
 const ZONES_CONFIG = {
   bar1: [
     { id: "bar1_cooler", label: "Cooler Beer", icon: "\u{1F9CA}", group: "Cooler Area" },
@@ -459,7 +467,7 @@ const AddProductModal = ({ isOpen, onClose, onAdd, categories }) => {
 };
 const ShoppingListModal = ({ isOpen, onClose, items }) => {
   if (!isOpen) return null;
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-white flex flex-col z-50 animate-in overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.ShoppingCart, { className: "text-amber-500" }), " PROCUREMENT"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-4 py-2 bg-[#F1F4F9] text-[var(--text-soft)] hover:text-[var(--text-main)] rounded-lg hover:bg-[var(--border-soft)] text-xs font-bold uppercase tracking-wider transition-all" }, "Close")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6 bg-[#F1F4F9]" }, items.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "text-center text-[var(--border-soft)] mt-32 flex flex-col items-center" }, /* @__PURE__ */ React.createElement(Icons.CheckCircle, { size: 64, className: "mb-4 opacity-50" }), /* @__PURE__ */ React.createElement("p", { className: "text-xl font-medium uppercase tracking-widest" }, "Stock Optimal")) : /* @__PURE__ */ React.createElement("div", { className: "grid gap-3" }, items.map((item, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "bg-white p-5 rounded-2xl border border-[var(--border-soft)] flex justify-between items-center shadow-sm hover:border-amber-300 transition-all group" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-[var(--text-main)] text-lg tracking-wide" }, item.name), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--text-soft)] font-mono mt-2 uppercase tracking-widest" }, "Stock: ", /* @__PURE__ */ React.createElement("span", { className: "text-emerald-600 font-bold" }, item.current), " ", /* @__PURE__ */ React.createElement("span", { className: "mx-2 text-[var(--border-soft)]" }, "|"), " Target: ", /* @__PURE__ */ React.createElement("span", { className: "text-[var(--c-beers-2)] font-bold" }, item.target))), /* @__PURE__ */ React.createElement("div", { className: "text-right bg-amber-50 px-4 py-2 rounded-xl border border-amber-100" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-amber-600 uppercase font-bold tracking-widest mb-1" }, "Acquire"), /* @__PURE__ */ React.createElement("div", { className: "text-2xl font-black text-amber-500" }, item.needed), item.details && /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-[var(--text-soft)] font-mono mt-1" }, item.details)))))));
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-white flex flex-col z-50 animate-in overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.ShoppingCart, { className: "text-amber-500" }), " PROCUREMENT"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-4 py-2 bg-[#F1F4F9] text-[var(--text-soft)] hover:text-[var(--text-main)] rounded-lg hover:bg-[var(--border-soft)] text-xs font-bold uppercase tracking-wider transition-all" }, "Close")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6 bg-[#F1F4F9]" }, items.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "text-center text-[var(--border-soft)] mt-32 flex flex-col items-center" }, /* @__PURE__ */ React.createElement(Icons.CheckCircle, { size: 64, className: "mb-4 opacity-50" }), /* @__PURE__ */ React.createElement("p", { className: "text-xl font-medium uppercase tracking-widest" }, "Stock Optimal")) : /* @__PURE__ */ React.createElement("div", { className: "grid gap-3" }, items.map((item, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "bg-white p-5 rounded-2xl border border-[var(--border-soft)] flex justify-between items-center shadow-sm hover:border-amber-300 transition-all group" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-[var(--text-main)] text-lg tracking-wide" }, item.name), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--text-soft)] font-mono mt-2 uppercase tracking-widest" }, "Stock: ", /* @__PURE__ */ React.createElement("span", { className: "text-emerald-600 font-bold" }, item.current), " ", /* @__PURE__ */ React.createElement("span", { className: "mx-2 text-[var(--border-soft)]" }, "|"), " Target: ", /* @__PURE__ */ React.createElement("span", { className: "text-[var(--c-beers-2)] font-bold" }, item.target)), /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-[var(--text-soft)] font-mono mt-1.5 flex gap-3" }, /* @__PURE__ */ React.createElement("span", null, "Bar 1: ", /* @__PURE__ */ React.createElement("b", { className: item.bar1 < item.bar1Target ? "text-rose-600" : "text-[var(--text-main)]" }, item.bar1, "/", item.bar1Target)), /* @__PURE__ */ React.createElement("span", null, "Bar 2: ", /* @__PURE__ */ React.createElement("b", { className: item.bar2 < item.bar2Target ? "text-rose-600" : "text-[var(--text-main)]" }, item.bar2, "/", item.bar2Target)))), /* @__PURE__ */ React.createElement("div", { className: "text-right bg-amber-50 px-4 py-2 rounded-xl border border-amber-100" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-amber-600 uppercase font-bold tracking-widest mb-1" }, "Acquire"), /* @__PURE__ */ React.createElement("div", { className: "text-2xl font-black text-amber-500" }, item.needed), item.details && /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-[var(--text-soft)] font-mono mt-1" }, item.details)))))));
 };
 const CountReviewModal = ({ isOpen, onClose, data, onUpdate }) => {
   if (!isOpen) return null;
@@ -1767,9 +1775,13 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
     const toBuy = [];
     data.forEach((cat) => {
       cat.items.forEach((item) => {
-        const target = PAR_LEVELS[item.name];
-        if (target !== void 0) {
-          const current = (parseFloat(item.bar1) || 0) + (parseFloat(item.bar2) || 0) + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
+        const bar1Target = getBar1Target(item.name);
+        if (bar1Target !== void 0) {
+          const bar2Target = BAR2_PAR_LEVEL;
+          const target = bar1Target + bar2Target;
+          const bar1Qty = parseFloat(item.bar1) || 0;
+          const bar2Qty = parseFloat(item.bar2) || 0;
+          const current = bar1Qty + bar2Qty + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
           const needed = target - current;
           if (needed > 0) {
             let displayQuantity = needed;
@@ -1785,7 +1797,7 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
             } else {
               displayQuantity = customRound(needed);
             }
-            toBuy.push({ name: item.name, current, target, needed: displayQuantity, details });
+            toBuy.push({ name: item.name, current, target, bar1: bar1Qty, bar2: bar2Qty, bar1Target, bar2Target, needed: displayQuantity, details });
           }
         }
       });
