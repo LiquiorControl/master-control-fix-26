@@ -145,7 +145,7 @@ const SafeStorage = {
     }
   }
 };
-const APP_VERSION = "9.1";
+const APP_VERSION = "9.2";
 const BUILD_ID = "LIGHT_PC_EDITION";
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDqdJcKILp5kQ4sTxVm8Ch5E7oXfMD3BAM",
@@ -941,7 +941,8 @@ const Header = ({
   onStarClick,
   mobileSyncEnabled,
   onToggleMobileSync,
-  onShowBottleSpecs
+  onShowBottleSpecs,
+  onShowPrices
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const dateStr = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" });
@@ -978,6 +979,9 @@ const Header = ({
     onShowBottleSpecs();
     setShowMenu(false);
   }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-purple-50 hover:text-purple-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.Settings, { size: 18, className: "text-purple-500" }), " Bottle Specs (Weights)"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    onShowPrices();
+    setShowMenu(false);
+  }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.DollarSign, { size: 18, className: "text-emerald-500" }), " Product Prices ($)"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     onDownloadPDF();
     setShowMenu(false);
   }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-pink-50 hover:text-pink-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.FileText, { size: 18 }), " Export PDF Report"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
@@ -987,6 +991,131 @@ const Header = ({
     onClearAll();
     setShowMenu(false);
   }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition-all text-sm font-bold text-left group uppercase tracking-wider" }, /* @__PURE__ */ React.createElement(Icons.Trash, { size: 18 }), " Factory Reset"))))));
+};
+const DEFAULT_PRICES = {
+  "Casamigos Blanco": [37.60, 1],
+  "Casamigos Reposado": [42.30, 1],
+  "Espolon Blanco": [23.50, 1],
+  "Espolon Reposado": [24.44, 1],
+  "Patron Cristalino": [84.99, 1],
+  "Don Julio Blanco": [47.00, 1],
+  "Don Julio Reposado": [51.70, 1],
+  "Patron Silver": [47.00, 1],
+  "Patron Reposado": [49.82, 1],
+  "Clase Azul": [159.99, 1],
+  "Grand Old Parr 12": [31.00, 1],
+  "Crown Royal Regal": [23.50, 1],
+  "Apple Crown Royal": [23.50, 1],
+  "Hennessy VS": [37.60, 1],
+  "Buchanans 12": [32.90, 1],
+  "Johnnie Walker Black": [36.66, 1],
+  "Capitan Morgan Spice": [14.10, 1],
+  "Brugal Anejo": [21.62, 1],
+  "Tito's Texas Vodka": [18.00, 1],
+  "Grey Goose": [23.50, 1],
+  "Jack Daniels Black": [23.50, 1],
+  "WoodFord Reserve": [35.00, 1],
+  "Fernet Branca": [35.72, 1],
+  "Jagermeister": [20.68, 1],
+  "Jameson": [23.50, 1],
+  "Beefeater": [26.00, 1],
+  "Wahaka Mezcal": [31.96, 1],
+  "Malibu": [22.00, 1],
+  "Moet Imperial Necta Rose": [66.99, 1],
+  "Disaronno Amaretto": [28.99, 1],
+  "Procecco Zonin": [12.99, 1],
+  "Remy Martin": [44.18, 1],
+  "Novo Fogo Silver Cachaca": [32.99, 1],
+  "Bacardi Light": [16.92, 1],
+  "Bacardi Lime": [14.99, 1],
+  "Bacardi Limon": [14.99, 1],
+  "Pirassununga Cacha\xE7a 51": [17.00, 1],
+  "Barton Naturals Vodka": [5.00, 1],
+  "Barton Gin": [7.00, 1],
+  "Peach Schnapps Boston": [3.71, 1],
+  "Montezuma White": [11.09, 1],
+  "Triple Sec Boston": [2.71, 1],
+  "Long Island Tea Mix": [8.46, 1],
+  "Curacao Blue": [10.99, 1],
+  "Melon Boston": [10.99, 1],
+  "Sour Apple": [9.99, 1],
+  "Sour Apple HW": [10.99, 1],
+  "Sour Cherry Boston": [10.99, 1],
+  "Red Bull Sugar Free": [42.00, 24],
+  "Red Bull Regular": [42.00, 24],
+  "Red Bull Watermelon": [42.00, 24],
+  "Red Bull Juneberry": [49.99, 24],
+  "High Noon Variety Pack": [25.00, 12],
+  "Pacifico": [22.39, 24],
+  "Michelob Ultra": [26.00, 24],
+  "Modelo Especial": [22.39, 24],
+  "Corona": [22.39, 24],
+  "Heineken": [25.00, 18],
+  "Sangria": [71.95, 12],
+  "Chardonnay El Enemigo": [26.99, 1],
+  "Cafayate Malbec": [9.99, 1]
+};
+
+const getUnitCost = (item) => {
+  const p = parseFloat(item.price);
+  if (item.price !== undefined && item.price !== "" && !isNaN(p)) return p / (parseFloat(item.pack) || 1);
+  const d = DEFAULT_PRICES[item.name];
+  return d ? d[0] / d[1] : 0;
+};
+const getPriceInfo = (item) => {
+  const p = parseFloat(item.price);
+  if (item.price !== undefined && item.price !== "" && !isNaN(p)) return { price: String(item.price), pack: String(item.pack || 1) };
+  const d = DEFAULT_PRICES[item.name];
+  return d ? { price: d[0].toFixed(2), pack: String(d[1]) } : { price: "", pack: "1" };
+};
+const fmtMoney = (n) => "$" + (n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const PricesModal = ({ onClose, data, onSave }) => {
+  const h = React.createElement;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [edits, setEdits] = useState({});
+  const getVal = (item) => edits[item.id] || getPriceInfo(item);
+  const setField = (item, field, val) => {
+    const cur = getVal(item);
+    setEdits((prev) => __spreadProps(__spreadValues({}, prev), { [item.id]: __spreadProps(__spreadValues({}, cur), { [field]: val }) }));
+  };
+  const handleSave = () => {
+    const updates = Object.keys(edits).map((id) => ({ id, changes: { price: edits[id].price, pack: edits[id].pack } }));
+    onSave(updates);
+  };
+  const inp = { border: "1px solid var(--border-soft)", borderRadius: 10, padding: "8px 10px", fontSize: 14, fontWeight: 700, width: "100%", background: "#fff", color: "var(--text-main)", textAlign: "right" };
+  const cols = { display: "grid", gridTemplateColumns: "minmax(160px,1fr) 120px 90px 110px", gap: 12, alignItems: "center" };
+  const q = searchTerm.toLowerCase();
+  const editedCount = Object.keys(edits).length;
+  return h("div", { className: "fixed inset-0 bg-white flex flex-col z-[90] animate-in overflow-hidden" },
+    h("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" },
+      h("div", null,
+        h("h2", { className: "text-2xl font-black text-[var(--text-main)]" }, "PRODUCT PRICES ($)"),
+        h("div", { style: { fontSize: 12, color: "var(--text-soft)", marginTop: 4 } }, "Price you pay per bottle. For cases, enter the case price and how many units it has.")),
+      h("div", { style: { display: "flex", gap: 10 } },
+        h("button", { onClick: handleSave, disabled: editedCount === 0, style: { background: editedCount ? "var(--c-beers-2, #0B3FAE)" : "#CBD3E1", color: "#fff", padding: "10px 22px", borderRadius: 12, fontWeight: 800, fontSize: 13, border: "none", cursor: editedCount ? "pointer" : "default" } }, editedCount ? "SAVE PRICES (" + editedCount + ")" : "SAVE PRICES"),
+        h("button", { onClick: onClose, className: "bg-[#F1F4F9] hover:bg-[var(--border-soft)] text-[var(--text-soft)] px-6 rounded-xl font-bold border border-[var(--border-soft)] text-xs" }, "Close"))),
+    h("div", { style: { padding: "12px 24px", borderBottom: "1px solid var(--border-soft)" } },
+      h("input", { type: "text", placeholder: "Search product...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), style: __spreadProps(__spreadValues({}, inp), { textAlign: "left", maxWidth: 420 }) })),
+    h("div", { style: { flex: 1, overflowY: "auto", padding: "8px 24px 40px" } },
+      h("div", { style: __spreadProps(__spreadValues({}, cols), { padding: "10px 0", fontSize: 11, fontWeight: 800, color: "var(--text-soft)", letterSpacing: 1, position: "sticky", top: 0, background: "#fff", zIndex: 2 }) },
+        h("div", null, "PRODUCT"), h("div", { style: { textAlign: "right" } }, "PRICE ($)"), h("div", { style: { textAlign: "right" } }, "UNITS IN PACK"), h("div", { style: { textAlign: "right" } }, "COST PER UNIT")),
+      data.map((cat) => {
+        const items = cat.items.filter((i) => i.name.toLowerCase().includes(q));
+        if (items.length === 0) return null;
+        return h("div", { key: cat.category, style: { marginTop: 14 } },
+          h("div", { style: { fontSize: 12, fontWeight: 900, color: "var(--c-beers-2, #0B3FAE)", letterSpacing: 1.5, textTransform: "uppercase", margin: "10px 0 6px" } }, cat.category),
+          items.map((item) => {
+            const v = getVal(item);
+            const p = parseFloat(v.price);
+            const k = parseFloat(v.pack) || 1;
+            const unit = !isNaN(p) ? p / k : null;
+            return h("div", { key: item.id, style: __spreadProps(__spreadValues({}, cols), { padding: "6px 0", borderBottom: "1px solid #F1F4F9" }) },
+              h("div", { style: { fontWeight: 700, fontSize: 14, color: "var(--text-main)" } }, item.name),
+              h("input", { type: "number", step: "0.01", min: "0", value: v.price, placeholder: "0.00", onChange: (e) => setField(item, "price", e.target.value), style: inp }),
+              h("input", { type: "number", step: "1", min: "1", value: v.pack, onChange: (e) => setField(item, "pack", e.target.value), style: inp }),
+              h("div", { style: { textAlign: "right", fontWeight: 800, fontSize: 14, color: unit === null ? "#CBD3E1" : "var(--text-main)" } }, unit === null ? "—" : fmtMoney(unit)));
+          }));
+      })));
 };
 const createItem = (id, name) => ({
   id,
@@ -1095,6 +1224,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [showBottleSpecs, setShowBottleSpecs] = useState(false);
+  const [showPrices, setShowPrices] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showResetSecurity, setShowResetSecurity] = useState(false);
   const [showSpecsSecurity, setShowSpecsSecurity] = useState(false);
@@ -1307,6 +1437,29 @@ function App() {
     const chartVariance = await createChartImage({ type: "line", data: { labels: catVarianceEntries.map(([k]) => shortLabel(k)), datasets: [{ label: "Variance", data: catVarianceEntries.map(([, v]) => v.variance), borderColor: "#2563EB", backgroundColor: "rgba(37,99,235,0.12)", fill: true, tension: 0.35, pointBackgroundColor: "#2563EB", pointRadius: 4 }] }, options: { plugins: { title: { display: true, text: "Variance by Category" }, legend: { display: false } } } });
     const chartTopSellers = await createChartImage({ type: "bar", data: { labels: topSellers.map((i) => i.name), datasets: [{ data: topSellers.map((i) => i.sales), backgroundColor: "#0D9488", borderRadius: 5 }] }, options: { indexAxis: "y", plugins: { title: { display: true, text: "Top 5 Best Sellers" }, legend: { display: false } } } });
     const chartImg2 = await createChartImage({ type: "bar", data: { labels: topLosses.map((i) => i.name), datasets: [{ label: "Loss (Units)", data: topLosses.map((i) => i.diff), backgroundColor: "#F43F5E", borderRadius: 6 }] }, options: { indexAxis: "y", plugins: { title: { display: true, text: "Top 5 Product Losses" }, legend: { display: false } } } });
+    const money = fmtMoney;
+    const valCats = [];
+    let grandValue = 0;
+    let unpricedCount = 0;
+    data.forEach((cat) => {
+      let sub = 0;
+      const rows = [];
+      cat.items.forEach((item) => {
+        const qty = (parseFloat(item.bar1) || 0) + (parseFloat(item.bar2) || 0) + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
+        const unit = getUnitCost(item);
+        const v = qty * unit;
+        if (qty > 0) {
+          if (unit === 0) unpricedCount++;
+          rows.push([item.name, String(Number(qty.toFixed(2))), unit ? money(unit) : "no price", money(v)]);
+          sub += v;
+        }
+      });
+      grandValue += sub;
+      valCats.push({ cat: cat.category, rows, sub });
+    });
+    const valCatsShown = valCats.filter((c) => c.sub > 0);
+    const chartValueBar = await createChartImage({ type: "bar", data: { labels: valCatsShown.map((c) => shortLabel(c.cat)), datasets: [{ data: valCatsShown.map((c) => Math.round(c.sub * 100) / 100), backgroundColor: valCatsShown.map((c) => getCatColorHex(c.cat)), borderRadius: 5 }] }, options: { plugins: { title: { display: true, text: "Inventory Value by Category ($)" }, legend: { display: false } } } });
+    const chartValueShare = await createChartImage({ type: "doughnut", data: { labels: valCatsShown.map((c) => shortLabel(c.cat)), datasets: [{ data: valCatsShown.map((c) => Math.round(c.sub * 100) / 100), backgroundColor: valCatsShown.map((c) => getCatColorHex(c.cat)), borderColor: "#ffffff", borderWidth: 3 }] }, options: { cutout: "62%", plugins: { title: { display: true, text: "Value Share" } } } });
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const dateText = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
@@ -1348,6 +1501,13 @@ function App() {
     doc.setFontSize(8.5);
     doc.setTextColor(219, 234, 254);
     doc.text(dateText, 40, 29);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(219, 234, 254);
+    doc.text("INVENTORY VALUE", 195, 12, { align: "right" });
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text(money(grandValue), 195, 21, { align: "right" });
     let y0 = 42;
     const kpiCard = (x, w, label, value, sub, colorHex, big) => {
       const rgb = hexToRgb(colorHex);
@@ -1421,6 +1581,46 @@ function App() {
       doc.addImage(chartImg2, "JPEG", 17.5, 30.5, 175, 57);
     }
     doc.autoTable({ startY: 96, head: [["Item Name", "Category", "Missing Units"]], body: topLosses.map((i) => [i.name, i.category, i.diff.toFixed(2)]), theme: "grid", headStyles: { fillColor: [225, 29, 72], textColor: 255, fontStyle: "bold" }, styles: { fontSize: 10, cellPadding: 3.5, lineColor: [231, 235, 242] }, alternateRowStyles: { fillColor: [255, 241, 242] }, columnStyles: { 2: { fontStyle: "bold", textColor: [225, 29, 72] } } });
+    doc.addPage();
+    doc.setFillColor(13, 148, 136);
+    doc.rect(0, 0, PAGE_W, 22, "F");
+    doc.setFontSize(15);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text("Inventory Value (On Hand)", 15, 14);
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(231, 235, 242);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(15, 28, 180, 24, 3, 3, "FD");
+    doc.setFillColor(13, 148, 136);
+    doc.roundedRect(15, 28, 3, 24, 1.5, 1.5, "F");
+    doc.setFontSize(8);
+    doc.setTextColor(107, 117, 136);
+    doc.text("TOTAL INVENTORY VALUE", 105, 36, { align: "center" });
+    doc.setFontSize(22);
+    doc.setTextColor(13, 148, 136);
+    doc.text(money(grandValue), 105, 47, { align: "center" });
+    panelFrame(15, 58, 88, 58);
+    if (chartValueBar) doc.addImage(chartValueBar, "JPEG", 17, 60, 84, 54);
+    panelFrame(107, 58, 88, 58);
+    if (chartValueShare) doc.addImage(chartValueShare, "JPEG", 109, 60, 84, 54);
+    const valBody = [];
+    valCats.forEach((c) => {
+      if (c.rows.length === 0) return;
+      const rgb = hexToRgb(getCatColorHex(c.cat));
+      valBody.push([{ content: c.cat.toUpperCase(), colSpan: 4, styles: { fillColor: rgb, textColor: 255, fontStyle: "bold", fontSize: 8.5 } }]);
+      c.rows.forEach((r) => valBody.push(r));
+      valBody.push([{ content: "Subtotal", colSpan: 3, styles: { halign: "right", fontStyle: "bold", fillColor: [241, 244, 249] } }, { content: money(c.sub), styles: { halign: "right", fontStyle: "bold", fillColor: [241, 244, 249] } }]);
+    });
+    valBody.push([{ content: "TOTAL INVENTORY VALUE", colSpan: 3, styles: { halign: "right", fontStyle: "bold", fillColor: [13, 148, 136], textColor: 255 } }, { content: money(grandValue), styles: { halign: "right", fontStyle: "bold", fillColor: [13, 148, 136], textColor: 255 } }]);
+    doc.autoTable({ startY: 122, head: [["Product", "On Hand", "Cost / Unit", "Value"]], body: valBody, theme: "grid", headStyles: { fillColor: [30, 36, 51], textColor: 255, fontStyle: "bold", fontSize: 8.5 }, styles: { fontSize: 8.5, cellPadding: 2 }, columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } } });
+    if (unpricedCount > 0) {
+      const ny = doc.lastAutoTable.finalY + 6;
+      doc.setFontSize(8);
+      doc.setTextColor(225, 29, 72);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${unpricedCount} product(s) in stock have no price set and are counted as $0.00.`, 15, ny);
+    }
     doc.addPage();
     doc.setFillColor(30, 36, 51);
     doc.rect(0, 0, PAGE_W, 22, "F");
@@ -1904,7 +2104,8 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
       onShowBottleSpecs: () => {
         setSecurityCode("");
         setShowSpecsSecurity(true);
-      }
+      },
+      onShowPrices: () => setShowPrices(true)
     }
   ), showSearch && /* @__PURE__ */ React.createElement("div", { className: "bg-white p-4 border-b border-[var(--border-soft)] animate-in" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-6xl mx-auto relative flex gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1" }, /* @__PURE__ */ React.createElement(Icons.Search, { className: "absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-soft)]", size: 20 }), /* @__PURE__ */ React.createElement("input", { type: "text", placeholder: "QUERY DATABASE...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "w-full bg-[#F1F4F9] rounded-xl pl-12 pr-4 py-4 text-[var(--text-main)] border border-[var(--border-soft)] focus:outline-none focus:border-[var(--c-beers-1)] transition-all text-sm", autoFocus: true })), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     setShowSearch(false);
@@ -1912,7 +2113,11 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
   }, className: "bg-[#F1F4F9] hover:bg-[var(--border-soft)] text-[var(--text-soft)] px-6 rounded-xl font-bold border border-[var(--border-soft)] text-xs" }, "Close")))), /* @__PURE__ */ React.createElement("input", { type: "file", ref: fileInputRef, style: { display: "none" }, accept: ".json", onChange: handleRestoreFile }), /* @__PURE__ */ React.createElement("main", { className: "max-w-7xl mx-auto p-6 space-y-6 pt-8" }, categoryFilter && /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between bg-amber-50 border border-amber-200 p-4 rounded-xl mb-6 shadow-sm" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-700 font-bold text-sm uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-2 h-2 bg-amber-500 rounded-full animate-pulse" }), " FILTER ACTIVE: ", categoryFilter), /* @__PURE__ */ React.createElement("button", { onClick: () => setCategoryFilter(null), className: "text-[var(--text-soft)] hover:text-[var(--text-main)] text-xs font-bold uppercase tracking-widest hover:underline transition-all" }, "Clear Filter")), filteredData.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "text-center py-32 text-[var(--text-soft)] uppercase tracking-widest font-medium" }, /* @__PURE__ */ React.createElement("p", null, "No entries found in database.")), filteredData.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat.category, className: "mb-8" }, !searchTerm && /* @__PURE__ */ React.createElement(CategoryHeader, { title: cat.category, icon: getIcon(cat.category), colorClass: getCatColorClass(cat.category), isOpen: openCategories[cat.category], toggle: () => setOpenCategories((prev) => __spreadProps(__spreadValues({}, prev), { [cat.category]: !prev[cat.category] })) }), (openCategories[cat.category] || searchTerm || categoryFilter) && /* @__PURE__ */ React.createElement("div", { className: "grid gap-3 sm:grid-cols-1 lg:grid-cols-2" }, cat.items.map((item) => /* @__PURE__ */ React.createElement(InventoryRow, { key: item.id, item, onUpdate: updateItem, pendingBarcode, isWells: cat.category.includes("Wells"), categoryName: cat.category, onScanRequest: requestItemScan, onDelete: handleDeleteProduct })))))), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowAddProduct(true), className: "fixed bottom-8 right-8 z-40 bg-[var(--c-beers-2)] text-white p-5 rounded-full shadow-lg hover:opacity-90 hover:shadow-xl transition-all active:scale-95 group", title: "New Entry" }, /* @__PURE__ */ React.createElement(Icons.Plus, { size: 32, className: "group-hover:rotate-90 transition-transform duration-300" })), /* @__PURE__ */ React.createElement(ConfirmationModal, { isOpen: !!modalConfig, onClose: () => setModalConfig(null), onConfirm: modalConfig == null ? void 0 : modalConfig.onConfirm, title: modalConfig == null ? void 0 : modalConfig.title, message: modalConfig == null ? void 0 : modalConfig.message, isDestructive: modalConfig == null ? void 0 : modalConfig.isDestructive, customActions: modalConfig == null ? void 0 : modalConfig.customActions }), /* @__PURE__ */ React.createElement(ImportModal, { isOpen: showImportModal, onClose: () => {
     setShowImportModal(false);
     setPendingImportData(null);
-  }, onReplace: handleReplaceData, onMerge: handleMergeData }), /* @__PURE__ */ React.createElement(AddProductModal, { isOpen: showAddProduct, onClose: () => setShowAddProduct(false), onAdd: handleAddNewProduct, categories: data.map((c) => c.category) }), showCharts && /* @__PURE__ */ React.createElement(ChartsView, { data, onClose: () => setShowCharts(false) }), showShopping && /* @__PURE__ */ React.createElement(ShoppingListModal, { isOpen: showShopping, onClose: () => setShowShopping(false), items: shoppingItems }), showPurchasesLog && /* @__PURE__ */ React.createElement(PurchasesLogModal, { isOpen: showPurchasesLog, onClose: () => setShowPurchasesLog(false), data }), showSalesEntry && /* @__PURE__ */ React.createElement(SalesEntryModal, { isOpen: showSalesEntry, onClose: () => setShowSalesEntry(false), data, onUpdate: updateItem, onBatchUpdate: batchUpdateItems }), showCountReview && /* @__PURE__ */ React.createElement(CountReviewModal, { isOpen: showCountReview, onClose: () => setShowCountReview(false), data, onUpdate: updateItem }), /* @__PURE__ */ React.createElement(PremiumControlModal, { isOpen: showPremiumModal, onClose: () => setShowPremiumModal(false), data, onUpdateStickers: updateItemStickers }), /* @__PURE__ */ React.createElement(BottleSpecsModal, { isOpen: showBottleSpecs, onClose: () => setShowBottleSpecs(false), data, onUpdate: updateItem }), showResetSecurity && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-[var(--text-main)]/40 flex flex-col items-center justify-center z-[110] backdrop-blur-sm animate-in p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white border border-rose-200 w-full max-w-sm rounded-2xl p-8 shadow-2xl text-center relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 w-full h-1 bg-rose-500" }), /* @__PURE__ */ React.createElement(Icons.AlertTriangle, { size: 48, className: "text-rose-500 mx-auto mb-4" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] mb-2 uppercase" }, "Security Check"), /* @__PURE__ */ React.createElement("p", { className: "text-[var(--text-soft)] text-xs mb-6 font-mono" }, "AUTHORIZED PERSONNEL ONLY"), /* @__PURE__ */ React.createElement("input", { type: "password", value: securityCode, onChange: (e) => setSecurityCode(e.target.value), className: "w-full bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl px-4 py-4 text-center text-[var(--text-main)] font-mono text-lg focus:border-rose-500 outline-none mb-6 tracking-widest", placeholder: "ENTER PASSCODE", autoFocus: true }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowResetSecurity(false), className: "flex-1 py-3 rounded-xl bg-[#F1F4F9] text-[var(--text-soft)] hover:text-[var(--text-main)] font-bold text-xs uppercase tracking-wider" }, "Cancel"), /* @__PURE__ */ React.createElement("button", { onClick: performFactoryReset, className: "flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg" }, "Confirm")))), showSpecsSecurity && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-[var(--text-main)]/40 flex flex-col items-center justify-center z-[110] backdrop-blur-sm animate-in p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white border border-indigo-200 w-full max-w-sm rounded-2xl p-8 shadow-2xl text-center relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 w-full h-1 bg-indigo-500" }), /* @__PURE__ */ React.createElement(Icons.Settings, { size: 48, className: "text-indigo-500 mx-auto mb-4" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] mb-2 uppercase" }, "Configuration Access"), /* @__PURE__ */ React.createElement("p", { className: "text-[var(--text-soft)] text-xs mb-6 font-mono" }, "MANAGEMENT AUTHORIZATION REQUIRED"), /* @__PURE__ */ React.createElement("input", { type: "password", value: securityCode, onChange: (e) => setSecurityCode(e.target.value), className: "w-full bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl px-4 py-4 text-center text-[var(--text-main)] font-mono text-lg focus:border-indigo-500 outline-none mb-6 tracking-widest", placeholder: "ENTER PASSCODE", autoFocus: true }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowSpecsSecurity(false), className: "flex-1 py-3 rounded-xl bg-[#F1F4F9] text-[var(--text-soft)] hover:text-[var(--text-main)] font-bold text-xs uppercase tracking-wider" }, "Cancel"), /* @__PURE__ */ React.createElement("button", { onClick: verifySpecsAccess, className: "flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg" }, "Access")))), notification && /* @__PURE__ */ React.createElement("div", { className: "fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-[var(--text-main)] text-white px-8 py-4 rounded-2xl shadow-xl border border-[var(--border-soft)] flex items-center gap-4 animate-in z-[100] whitespace-nowrap" }, /* @__PURE__ */ React.createElement(Icons.CheckCircle, { size: 24, className: "text-emerald-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-sm tracking-widest uppercase" }, notification)));
+  }, onReplace: handleReplaceData, onMerge: handleMergeData }), /* @__PURE__ */ React.createElement(AddProductModal, { isOpen: showAddProduct, onClose: () => setShowAddProduct(false), onAdd: handleAddNewProduct, categories: data.map((c) => c.category) }), showCharts && /* @__PURE__ */ React.createElement(ChartsView, { data, onClose: () => setShowCharts(false) }), showShopping && /* @__PURE__ */ React.createElement(ShoppingListModal, { isOpen: showShopping, onClose: () => setShowShopping(false), items: shoppingItems }), showPurchasesLog && /* @__PURE__ */ React.createElement(PurchasesLogModal, { isOpen: showPurchasesLog, onClose: () => setShowPurchasesLog(false), data }), showSalesEntry && /* @__PURE__ */ React.createElement(SalesEntryModal, { isOpen: showSalesEntry, onClose: () => setShowSalesEntry(false), data, onUpdate: updateItem, onBatchUpdate: batchUpdateItems }), showCountReview && /* @__PURE__ */ React.createElement(CountReviewModal, { isOpen: showCountReview, onClose: () => setShowCountReview(false), data, onUpdate: updateItem }), /* @__PURE__ */ React.createElement(PremiumControlModal, { isOpen: showPremiumModal, onClose: () => setShowPremiumModal(false), data, onUpdateStickers: updateItemStickers }), /* @__PURE__ */ React.createElement(BottleSpecsModal, { isOpen: showBottleSpecs, onClose: () => setShowBottleSpecs(false), data, onUpdate: updateItem }), showPrices && /* @__PURE__ */ React.createElement(PricesModal, { onClose: () => setShowPrices(false), data, onSave: (ups) => {
+    if (ups.length) batchUpdateItems(ups);
+    setShowPrices(false);
+    showNotification("PRICES SAVED");
+  } }), showResetSecurity && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-[var(--text-main)]/40 flex flex-col items-center justify-center z-[110] backdrop-blur-sm animate-in p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white border border-rose-200 w-full max-w-sm rounded-2xl p-8 shadow-2xl text-center relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 w-full h-1 bg-rose-500" }), /* @__PURE__ */ React.createElement(Icons.AlertTriangle, { size: 48, className: "text-rose-500 mx-auto mb-4" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] mb-2 uppercase" }, "Security Check"), /* @__PURE__ */ React.createElement("p", { className: "text-[var(--text-soft)] text-xs mb-6 font-mono" }, "AUTHORIZED PERSONNEL ONLY"), /* @__PURE__ */ React.createElement("input", { type: "password", value: securityCode, onChange: (e) => setSecurityCode(e.target.value), className: "w-full bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl px-4 py-4 text-center text-[var(--text-main)] font-mono text-lg focus:border-rose-500 outline-none mb-6 tracking-widest", placeholder: "ENTER PASSCODE", autoFocus: true }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowResetSecurity(false), className: "flex-1 py-3 rounded-xl bg-[#F1F4F9] text-[var(--text-soft)] hover:text-[var(--text-main)] font-bold text-xs uppercase tracking-wider" }, "Cancel"), /* @__PURE__ */ React.createElement("button", { onClick: performFactoryReset, className: "flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg" }, "Confirm")))), showSpecsSecurity && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-[var(--text-main)]/40 flex flex-col items-center justify-center z-[110] backdrop-blur-sm animate-in p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white border border-indigo-200 w-full max-w-sm rounded-2xl p-8 shadow-2xl text-center relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 w-full h-1 bg-indigo-500" }), /* @__PURE__ */ React.createElement(Icons.Settings, { size: 48, className: "text-indigo-500 mx-auto mb-4" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] mb-2 uppercase" }, "Configuration Access"), /* @__PURE__ */ React.createElement("p", { className: "text-[var(--text-soft)] text-xs mb-6 font-mono" }, "MANAGEMENT AUTHORIZATION REQUIRED"), /* @__PURE__ */ React.createElement("input", { type: "password", value: securityCode, onChange: (e) => setSecurityCode(e.target.value), className: "w-full bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl px-4 py-4 text-center text-[var(--text-main)] font-mono text-lg focus:border-indigo-500 outline-none mb-6 tracking-widest", placeholder: "ENTER PASSCODE", autoFocus: true }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowSpecsSecurity(false), className: "flex-1 py-3 rounded-xl bg-[#F1F4F9] text-[var(--text-soft)] hover:text-[var(--text-main)] font-bold text-xs uppercase tracking-wider" }, "Cancel"), /* @__PURE__ */ React.createElement("button", { onClick: verifySpecsAccess, className: "flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg" }, "Access")))), notification && /* @__PURE__ */ React.createElement("div", { className: "fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-[var(--text-main)] text-white px-8 py-4 rounded-2xl shadow-xl border border-[var(--border-soft)] flex items-center gap-4 animate-in z-[100] whitespace-nowrap" }, /* @__PURE__ */ React.createElement(Icons.CheckCircle, { size: 24, className: "text-emerald-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-sm tracking-widest uppercase" }, notification)));
 }
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(/* @__PURE__ */ React.createElement(ErrorBoundary, null, /* @__PURE__ */ React.createElement(App, null)));
