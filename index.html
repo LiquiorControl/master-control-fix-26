@@ -145,7 +145,7 @@ const SafeStorage = {
     }
   }
 };
-const APP_VERSION = "9.2";
+const APP_VERSION = "9.4";
 const BUILD_ID = "LIGHT_PC_EDITION";
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDqdJcKILp5kQ4sTxVm8Ch5E7oXfMD3BAM",
@@ -517,20 +517,27 @@ const CountReviewModal = ({ isOpen, onClose, data, onUpdate }) => {
     }
   }), " ", grandTotal === 0 && /* @__PURE__ */ React.createElement("div", { className: "text-center text-[var(--border-soft)] py-32 flex flex-col items-center" }, /* @__PURE__ */ React.createElement(Icons.List, { size: 80, className: "mb-6 opacity-30" }), /* @__PURE__ */ React.createElement("p", { className: "text-xl font-medium uppercase tracking-widest" }, "No data recorded"))));
 };
-const ChartsView = ({ data, onClose }) => {
+const ChartsView = ({ data, onClose, posSold }) => {
   const canvasRef = useRef(null);
   const chartInstance = useRef(null);
-  const { activeItems, totals, categoryData } = useMemo(() => {
+  const { activeItems, totals, categoryData, invValue } = useMemo(() => {
     let items = [];
+    const invT = { start: 0, end: 0, sales: 0 };
+    const invCats = [];
     let totalConsumed = 0;
     let totalSold = 0;
     let totalDiff = 0;
     let catMap = {};
     data.forEach((cat) => {
       let catSales = 0;
+      const cv = { start: 0, end: 0, sales: 0 };
       cat.items.forEach((item) => {
         const totalPhys = (parseFloat(item.bar1) || 0) + (parseFloat(item.bar2) || 0) + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
+        const unitCost = getUnitCost(item);
+        cv.end += totalPhys * unitCost;
+        cv.sales += (parseFloat(item.sales) || 0) * unitCost;
         const totalStart = (parseFloat(item.start_bar1) || 0) + (parseFloat(item.start_bar2) || 0) + (parseFloat(item.start_bodega) || 0) + (parseFloat(item.start_barroluco) || 0);
+        cv.start += totalStart * unitCost;
         const purchases = parseFloat(item.purchases) || 0;
         const sales = parseFloat(item.sales) || 0;
         const systemConsumption = totalStart + purchases - totalPhys;
@@ -544,9 +551,22 @@ const ChartsView = ({ data, onClose }) => {
         }
       });
       if (catSales > 0) catMap[cat.category] = catSales;
+      invT.start += cv.start;
+      invT.end += cv.end;
+      invT.sales += cv.sales;
+      if (cv.start > 0 || cv.end > 0 || cv.sales > 0) invCats.push({ cat: cat.category, start: cv.start, end: cv.end, sales: cv.sales });
     });
-    return { activeItems: items.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)), totals: { totalConsumed, totalSold, totalDiff }, categoryData: catMap };
-  }, [data]);
+    const posGroupMap = {};
+    let posRev = 0;
+    Object.keys(posSold || {}).forEach((k) => {
+      const e = posSold[k];
+      posRev += e.revenue || 0;
+      const g = e.group || "Other";
+      posGroupMap[g] = (posGroupMap[g] || 0) + (e.revenue || 0);
+    });
+    const posGroups = Object.entries(posGroupMap).map(([group, revenue]) => ({ group, revenue })).sort((a, b) => b.revenue - a.revenue);
+    return { activeItems: items.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)), totals: { totalConsumed, totalSold, totalDiff }, categoryData: catMap, invValue: { totals: invT, cats: invCats, posRev, posGroups } };
+  }, [data, posSold]);
   useEffect(() => {
     if (canvasRef.current && window.Chart) {
       if (chartInstance.current) chartInstance.current.destroy();
@@ -557,7 +577,7 @@ const ChartsView = ({ data, onClose }) => {
       if (chartInstance.current) chartInstance.current.destroy();
     };
   }, [categoryData]);
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-white flex flex-col z-50 animate-in overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] flex items-center gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-blue-50 rounded-xl border border-blue-100 text-[var(--c-beers-2)]" }, /* @__PURE__ */ React.createElement(Icons.BarChart, { size: 24 })), "ANALYTICS"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-6 py-2 bg-[#F1F4F9] text-[var(--text-soft)] rounded-lg hover:bg-[var(--border-soft)] transition-all text-xs font-bold uppercase tracking-widest" }, "Exit")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6 space-y-8 bg-[#F1F4F9]" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-4 flex flex-col" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 bg-white p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm flex flex-col justify-center relative overflow-hidden group" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold tracking-[0.2em] mb-2" }, "Total Consumed"), /* @__PURE__ */ React.createElement("div", { className: "text-5xl font-black text-[var(--text-main)] tracking-tighter" }, totals.totalConsumed.toFixed(1))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 bg-white p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm flex flex-col justify-center relative overflow-hidden group" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--c-wines-1)] uppercase font-bold tracking-[0.2em] mb-2" }, "Total Sales (POS)"), /* @__PURE__ */ React.createElement("div", { className: "text-5xl font-black text-[var(--c-wines-2)] tracking-tighter" }, totals.totalSold.toFixed(1))), /* @__PURE__ */ React.createElement("div", { className: `flex-1 p-6 rounded-3xl border shadow-sm flex flex-col justify-center relative overflow-hidden ${totals.totalDiff < 0 ? "border-rose-200 bg-rose-50" : "border-emerald-200 bg-emerald-50"}` }, /* @__PURE__ */ React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-[0.2em] mb-2 ${totals.totalDiff < 0 ? "text-rose-500" : "text-emerald-500"}` }, "Net Variance"), /* @__PURE__ */ React.createElement("div", { className: `text-5xl font-black tracking-tighter ${totals.totalDiff < 0 ? "text-rose-600" : "text-emerald-600"}` }, totals.totalDiff > 0 ? "+" : "", totals.totalDiff.toFixed(1)))), /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm min-h-[300px] relative flex flex-col" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 left-6 text-[10px] font-bold text-[var(--text-soft)] uppercase tracking-[0.2em] z-10" }, "Sales Distribution"), /* @__PURE__ */ React.createElement("div", { className: "flex-1 relative mt-4" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef })))), /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("h3", { className: "text-[10px] font-bold text-[var(--text-soft)] uppercase tracking-[0.3em] px-2 mt-8" }, "Variance Breakdown"), activeItems.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-white border border-[var(--border-soft)] p-6 rounded-2xl relative overflow-hidden shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-start relative z-10" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-[var(--text-main)] text-lg" }, item.name), /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-[var(--text-soft)] font-mono mt-1 uppercase tracking-widest" }, "ID: ", item.id)), /* @__PURE__ */ React.createElement("div", { className: `px-4 py-2 rounded-xl text-lg font-black font-mono border min-w-[80px] text-center ${item.diff < -0.1 ? "bg-rose-50 text-rose-600 border-rose-200" : item.diff > 0.1 ? "bg-blue-50 text-[var(--c-beers-2)] border-blue-200" : "bg-[#F1F4F9] text-[var(--text-soft)] border-[var(--border-soft)]"}` }, item.diff > 0 ? "+" : "", item.diff.toFixed(2))))))));
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-white flex flex-col z-50 animate-in overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] flex items-center gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-blue-50 rounded-xl border border-blue-100 text-[var(--c-beers-2)]" }, /* @__PURE__ */ React.createElement(Icons.BarChart, { size: 24 })), "ANALYTICS"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-6 py-2 bg-[#F1F4F9] text-[var(--text-soft)] rounded-lg hover:bg-[var(--border-soft)] transition-all text-xs font-bold uppercase tracking-widest" }, "Exit")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6 space-y-8 bg-[#F1F4F9]" }, /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", border: "1px solid var(--border-soft)", borderRadius: 24, padding: 24, boxShadow: "0 1px 2px rgba(0,0,0,.04)" } }, React.createElement("div", { style: { fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", color: "var(--text-soft)", textTransform: "uppercase", marginBottom: 14 } }, "Value in Dollars"), React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14 } }, [["On Hand (Start)", invValue.totals.start, "#2563EB", "at cost"], ["Count End (Physical)", invValue.totals.end, "#0D9488", "at cost"], ["Sales (POS)", invValue.posRev, "#7C3AED", "selling price"], ["Cost of Sales", invValue.totals.sales, "#D97706", "at cost"]].map(([label, val, color, sub]) => React.createElement("div", { key: label, style: { background: "#F8FAFC", border: "1px solid var(--border-soft)", borderLeft: "4px solid " + color, borderRadius: 16, padding: "14px 18px" } }, React.createElement("div", { style: { fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", color, textTransform: "uppercase", marginBottom: 4 } }, label), React.createElement("div", { style: { fontSize: 28, fontWeight: 900, color, letterSpacing: "-0.02em" } }, fmtMoney(val)), React.createElement("div", { style: { fontSize: 11, color: "var(--text-soft)", marginTop: 2 } }, sub)))), invValue.cats.length > 0 && React.createElement("div", { style: { marginTop: 18, overflowX: "auto" } }, React.createElement("div", { style: { display: "grid", gridTemplateColumns: "minmax(150px,1.6fr) repeat(3, minmax(90px,1fr))", gap: 8, fontSize: 11, fontWeight: 800, color: "var(--text-soft)", padding: "6px 0", borderBottom: "1px solid var(--border-soft)", letterSpacing: 1 } }, React.createElement("div", null, "CATEGORY (AT COST)"), React.createElement("div", { style: { textAlign: "right" } }, "ON HAND"), React.createElement("div", { style: { textAlign: "right" } }, "COUNT END"), React.createElement("div", { style: { textAlign: "right" } }, "COST OF SALES")), invValue.cats.map((c) => React.createElement("div", { key: c.cat, style: { display: "grid", gridTemplateColumns: "minmax(150px,1.6fr) repeat(3, minmax(90px,1fr))", gap: 8, fontSize: 13, fontWeight: 700, color: "var(--text-main)", padding: "8px 0", borderBottom: "1px solid #F1F4F9" } }, React.createElement("div", null, c.cat), React.createElement("div", { style: { textAlign: "right" } }, fmtMoney(c.start)), React.createElement("div", { style: { textAlign: "right" } }, fmtMoney(c.end)), React.createElement("div", { style: { textAlign: "right" } }, fmtMoney(c.sales))))), invValue.posGroups.length > 0 && React.createElement("div", { style: { marginTop: 22 } }, React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: "#7C3AED", padding: "6px 0", borderBottom: "1px solid var(--border-soft)", letterSpacing: 1 } }, "POS SALES BY GROUP"), invValue.posGroups.map((g) => React.createElement("div", { key: g.group, style: { display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700, color: "var(--text-main)", padding: "8px 0", borderBottom: "1px solid #F1F4F9" } }, React.createElement("span", null, g.group), React.createElement("span", null, fmtMoney(g.revenue)))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-4 flex flex-col" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 bg-white p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm flex flex-col justify-center relative overflow-hidden group" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold tracking-[0.2em] mb-2" }, "Total Consumed"), /* @__PURE__ */ React.createElement("div", { className: "text-5xl font-black text-[var(--text-main)] tracking-tighter" }, totals.totalConsumed.toFixed(1))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 bg-white p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm flex flex-col justify-center relative overflow-hidden group" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--c-wines-1)] uppercase font-bold tracking-[0.2em] mb-2" }, "Total Sales (POS)"), /* @__PURE__ */ React.createElement("div", { className: "text-5xl font-black text-[var(--c-wines-2)] tracking-tighter" }, totals.totalSold.toFixed(1))), /* @__PURE__ */ React.createElement("div", { className: `flex-1 p-6 rounded-3xl border shadow-sm flex flex-col justify-center relative overflow-hidden ${totals.totalDiff < 0 ? "border-rose-200 bg-rose-50" : "border-emerald-200 bg-emerald-50"}` }, /* @__PURE__ */ React.createElement("div", { className: `text-[10px] uppercase font-bold tracking-[0.2em] mb-2 ${totals.totalDiff < 0 ? "text-rose-500" : "text-emerald-500"}` }, "Net Variance"), /* @__PURE__ */ React.createElement("div", { className: `text-5xl font-black tracking-tighter ${totals.totalDiff < 0 ? "text-rose-600" : "text-emerald-600"}` }, totals.totalDiff > 0 ? "+" : "", totals.totalDiff.toFixed(1)))), /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm min-h-[300px] relative flex flex-col" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-6 left-6 text-[10px] font-bold text-[var(--text-soft)] uppercase tracking-[0.2em] z-10" }, "Sales Distribution"), /* @__PURE__ */ React.createElement("div", { className: "flex-1 relative mt-4" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef })))), /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("h3", { className: "text-[10px] font-bold text-[var(--text-soft)] uppercase tracking-[0.3em] px-2 mt-8" }, "Variance Breakdown"), activeItems.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-white border border-[var(--border-soft)] p-6 rounded-2xl relative overflow-hidden shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-start relative z-10" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-[var(--text-main)] text-lg" }, item.name), /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-[var(--text-soft)] font-mono mt-1 uppercase tracking-widest" }, "ID: ", item.id)), /* @__PURE__ */ React.createElement("div", { className: `px-4 py-2 rounded-xl text-lg font-black font-mono border min-w-[80px] text-center ${item.diff < -0.1 ? "bg-rose-50 text-rose-600 border-rose-200" : item.diff > 0.1 ? "bg-blue-50 text-[var(--c-beers-2)] border-blue-200" : "bg-[#F1F4F9] text-[var(--text-soft)] border-[var(--border-soft)]"}` }, item.diff > 0 ? "+" : "", item.diff.toFixed(2))))))));
 };
 const PurchasesLogModal = ({ isOpen, onClose, data }) => {
   if (!isOpen) return null;
@@ -790,28 +810,43 @@ const applyPOSImport = (parsedResults, data, shotSize, onBatchUpdate) => {
   return updates.length;
 };
 const POS_TYPE_LABELS = { bottle: "Bottle", shot: "Shot", unit: "Unit", bucket: "Bucket (x6)", cocktail: "Cocktail", pitcher: "Pitcher" };
-const ImportSalesPanel = ({ data, onBatchUpdate, shotSize }) => {
+const ImportSalesPanel = ({ data, onBatchUpdate, shotSize, posPrices, onPosApply }) => {
+  const [posRows, setPosRows] = useState([]);
+  const [posResult, setPosResult] = useState(null);
+  const [updPrices, setUpdPrices] = useState(true);
   const [rawText, setRawText] = useState("");
   const [parsed, setParsed] = useState(null);
   const [appliedCount, setAppliedCount] = useState(null);
   const handleParse = () => {
     if (!rawText.trim()) return;
-    setParsed(parsePOSText(rawText, data));
+    const pre = preprocessPOS(rawText, posPrices);
+    setPosRows(pre.rows);
+    setPosResult(null);
+    setParsed(parsePOSText(pre.text, data));
     setAppliedCount(null);
   };
   const handleApply = () => {
     if (!parsed) return;
     const matched = parsed.filter((r) => r.type !== "unmatched");
     const count = applyPOSImport(matched, data, shotSize, onBatchUpdate);
+    if (onPosApply && posRows.length) setPosResult(onPosApply(posRows, updPrices));
+    setPosRows([]);
     setAppliedCount(count);
     setParsed(null);
     setRawText("");
   };
   const matchedItems = parsed ? parsed.filter((r) => r.type !== "unmatched") : [];
   const unmatchedItems = parsed ? parsed.filter((r) => r.type === "unmatched") : [];
-  return /* @__PURE__ */ React.createElement("div", { className: "space-y-6" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm" }, /* @__PURE__ */ React.createElement("h3", { className: "text-[var(--text-main)] font-black text-lg mb-2 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 20, className: "text-[var(--c-beers-1)]" }), " Paste Sales Report"), /* @__PURE__ */ React.createElement("p", { className: "text-[var(--text-soft)] text-sm mb-4" }, "Paste your POS list below, format ", /* @__PURE__ */ React.createElement("span", { className: "font-mono bg-[#F1F4F9] px-1.5 py-0.5 rounded" }, "Product - Qty"), ". Lines ending in ", /* @__PURE__ */ React.createElement("b", null, "BTL"), " count as bottles, ", /* @__PURE__ */ React.createElement("b", null, "Bucket"), " counts as x6, plain numbers on liquor count as shots."), /* @__PURE__ */ React.createElement("textarea", { value: rawText, onChange: (e) => setRawText(e.target.value), rows: 8, className: "w-full bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl p-4 font-mono text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--c-beers-1)] transition-all", placeholder: "Corona Bucket - 30\nHeineken - 12\nMargarita - 56\nPatron Silver BTL - 2" }), /* @__PURE__ */ React.createElement("button", { onClick: handleParse, className: "mt-4 w-full bg-[var(--c-beers-2)] hover:opacity-90 text-white font-black py-3 rounded-xl transition-all uppercase text-sm tracking-widest" }, "Parse List")), appliedCount !== null && /* @__PURE__ */ React.createElement("div", { className: "bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center" }, /* @__PURE__ */ React.createElement(Icons.CheckCircle, { className: "text-emerald-500 mx-auto mb-2", size: 32 }), /* @__PURE__ */ React.createElement("div", { className: "text-emerald-700 font-black text-lg" }, "Imported ", appliedCount, " products")), parsed && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm" }, /* @__PURE__ */ React.createElement("h3", { className: "text-emerald-700 font-black text-lg mb-4" }, "Matched (", matchedItems.length, ")"), /* @__PURE__ */ React.createElement("div", { className: "space-y-2 max-h-96 overflow-y-auto" }, matchedItems.map((r, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "flex justify-between items-center bg-emerald-50 rounded-lg px-4 py-2.5 text-sm gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-[var(--text-main)] font-semibold truncate" }, r.original), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-700 font-bold text-right flex-shrink-0" }, "\u2192 ", r.target, " ", /* @__PURE__ */ React.createElement("span", { className: "text-emerald-500" }, "(", POS_TYPE_LABELS[r.type], " \xD7", r.qty, ")")))))), unmatchedItems.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-2xl border border-amber-200 shadow-sm" }, /* @__PURE__ */ React.createElement("h3", { className: "text-amber-700 font-black text-lg mb-2 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.AlertTriangle, { size: 18 }), " Not Matched (", unmatchedItems.length, ")"), /* @__PURE__ */ React.createElement("p", { className: "text-amber-600/70 text-xs mb-4" }, "These weren't recognized \u2014 they were NOT applied. Add them manually if needed."), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, unmatchedItems.map((r, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "flex justify-between items-center bg-amber-50 rounded-lg px-4 py-2.5 text-sm" }, /* @__PURE__ */ React.createElement("span", { className: "text-[var(--text-main)] font-semibold" }, r.original), /* @__PURE__ */ React.createElement("span", { className: "text-amber-700 font-bold" }, "qty: ", r.qty))))), /* @__PURE__ */ React.createElement("button", { onClick: handleApply, disabled: matchedItems.length === 0, className: "w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-black py-4 rounded-xl text-base shadow-lg transition-all uppercase tracking-widest" }, "Apply ", matchedItems.length, " Matched Sales")));
+  const revPreview = { total: 0, missing: [] };
+  posRows.forEach((r) => {
+    if (r.revenue === null) revPreview.missing.push(r.name);
+    else revPreview.total += r.revenue;
+  });
+  const bannerStyle = { background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 16, padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "#047857" };
+  const warnStyle = { color: "#BE123C", fontWeight: 600, marginTop: 4 };
+  return /* @__PURE__ */ React.createElement("div", { className: "space-y-6" }, parsed && posRows.length > 0 && /* @__PURE__ */ React.createElement("div", { style: bannerStyle }, "POS sales in this list: ", fmtMoney(revPreview.total), posRows.some((r) => r.hasRevenue) && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontWeight: 600, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: updPrices, onChange: (e) => setUpdPrices(e.target.checked) }), "Update sale prices from this list (sales $ / quantity)"), revPreview.missing.length > 0 && /* @__PURE__ */ React.createElement("div", { style: warnStyle }, revPreview.missing.length + " item(s) have no sale price: " + revPreview.missing.join(", ") + ". Add them in Settings > Prices ($) > POS Sale Prices.")), !parsed && posResult && /* @__PURE__ */ React.createElement("div", { style: bannerStyle }, "Added ", fmtMoney(posResult.revenue), " in POS sales.", posResult.priceChanges > 0 && " " + posResult.priceChanges + " sale price(s) updated.", posResult.missing.length > 0 && /* @__PURE__ */ React.createElement("div", { style: warnStyle }, posResult.missing.length + " item(s) still have no sale price: " + posResult.missing.join(", ") + ". Add them in Settings > Prices ($) > POS Sale Prices.")), /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm" }, /* @__PURE__ */ React.createElement("h3", { className: "text-[var(--text-main)] font-black text-lg mb-2 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 20, className: "text-[var(--c-beers-1)]" }), " Paste Sales Report"), /* @__PURE__ */ React.createElement("p", { className: "text-[var(--text-soft)] text-sm mb-4" }, "Paste your POS list below, format ", /* @__PURE__ */ React.createElement("span", { className: "font-mono bg-[#F1F4F9] px-1.5 py-0.5 rounded" }, "Product - Qty"), ". Lines ending in ", /* @__PURE__ */ React.createElement("b", null, "BTL"), " count as bottles, ", /* @__PURE__ */ React.createElement("b", null, "Bucket"), " counts as x6, plain numbers on liquor count as shots."), /* @__PURE__ */ React.createElement("textarea", { value: rawText, onChange: (e) => setRawText(e.target.value), rows: 8, className: "w-full bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl p-4 font-mono text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--c-beers-1)] transition-all", placeholder: "Corona Bucket - 30\nHeineken - 12\nMargarita - 56\nPatron Silver BTL - 2" }), /* @__PURE__ */ React.createElement("button", { onClick: handleParse, className: "mt-4 w-full bg-[var(--c-beers-2)] hover:opacity-90 text-white font-black py-3 rounded-xl transition-all uppercase text-sm tracking-widest" }, "Parse List")), appliedCount !== null && /* @__PURE__ */ React.createElement("div", { className: "bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center" }, /* @__PURE__ */ React.createElement(Icons.CheckCircle, { className: "text-emerald-500 mx-auto mb-2", size: 32 }), /* @__PURE__ */ React.createElement("div", { className: "text-emerald-700 font-black text-lg" }, "Imported ", appliedCount, " products")), parsed && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm" }, /* @__PURE__ */ React.createElement("h3", { className: "text-emerald-700 font-black text-lg mb-4" }, "Matched (", matchedItems.length, ")"), /* @__PURE__ */ React.createElement("div", { className: "space-y-2 max-h-96 overflow-y-auto" }, matchedItems.map((r, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "flex justify-between items-center bg-emerald-50 rounded-lg px-4 py-2.5 text-sm gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-[var(--text-main)] font-semibold truncate" }, r.original), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-700 font-bold text-right flex-shrink-0" }, "\u2192 ", r.target, " ", /* @__PURE__ */ React.createElement("span", { className: "text-emerald-500" }, "(", POS_TYPE_LABELS[r.type], " \xD7", r.qty, ")")))))), unmatchedItems.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-2xl border border-amber-200 shadow-sm" }, /* @__PURE__ */ React.createElement("h3", { className: "text-amber-700 font-black text-lg mb-2 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.AlertTriangle, { size: 18 }), " Not Matched (", unmatchedItems.length, ")"), /* @__PURE__ */ React.createElement("p", { className: "text-amber-600/70 text-xs mb-4" }, "These weren't recognized \u2014 they were NOT applied. Add them manually if needed."), /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, unmatchedItems.map((r, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "flex justify-between items-center bg-amber-50 rounded-lg px-4 py-2.5 text-sm" }, /* @__PURE__ */ React.createElement("span", { className: "text-[var(--text-main)] font-semibold" }, r.original), /* @__PURE__ */ React.createElement("span", { className: "text-amber-700 font-bold" }, "qty: ", r.qty))))), /* @__PURE__ */ React.createElement("button", { onClick: handleApply, disabled: matchedItems.length === 0, className: "w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-black py-4 rounded-xl text-base shadow-lg transition-all uppercase tracking-widest" }, "Apply ", matchedItems.length, " Matched Sales")));
 };
-const SalesEntryModal = ({ isOpen, onClose, data, onUpdate, onBatchUpdate }) => {
+const SalesEntryModal = ({ isOpen, onClose, data, onUpdate, onBatchUpdate, posPrices, onPosApply }) => {
   if (!isOpen) return null;
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("products");
@@ -916,7 +951,7 @@ const SalesEntryModal = ({ isOpen, onClose, data, onUpdate, onBatchUpdate }) => 
     }
   };
   const renderRecipeList = (list) => /* @__PURE__ */ React.createElement("div", { className: "grid gap-3" }, list.map((recipe, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "bg-white p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm flex justify-between items-center hover:border-blue-300 transition-all group" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 mr-4" }, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-[var(--text-main)] text-base" }, recipe.name), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-[var(--text-soft)] mt-1 font-mono" }, recipe.ingredients.map((ing) => `${ing.qty} ${ing.name}`).join(", "))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("input", { type: "number", min: "1", placeholder: "1", className: "w-16 h-14 bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl px-2 text-center text-[var(--text-main)] font-mono text-xl font-bold focus:border-[var(--c-beers-1)] outline-none", value: recipeQuantities[recipe.name] || "", onChange: (e) => handleRecipeQtyChange(recipe.name, e.target.value) }), /* @__PURE__ */ React.createElement("button", { onClick: () => handleAddRecipe(recipe), className: "px-6 h-14 bg-[#F1F4F9] border border-[var(--border-soft)] text-[var(--text-soft)] hover:bg-[var(--c-beers-2)] hover:text-white rounded-xl font-black text-sm transition-all active:scale-95 shadow-sm whitespace-nowrap uppercase tracking-wider" }, " Add ")))));
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-white flex flex-col z-[85] animate-in overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.DollarSign, { className: "text-emerald-500" }), " POS CALCULATOR"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-6 py-2 bg-[#F1F4F9] text-[var(--text-soft)] rounded-lg hover:bg-[var(--border-soft)] font-bold text-xs uppercase tracking-widest border border-[var(--border-soft)] transition-all" }, "Exit")), /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-[var(--border-soft)] bg-[#F1F4F9] space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white p-4 rounded-2xl border-2 border-[var(--c-beers-1)] flex items-center justify-between shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-[var(--c-beers-1)] text-white rounded-xl shadow-lg shadow-blue-200" }, /* @__PURE__ */ React.createElement(Icons.Settings, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--c-beers-1)] font-black uppercase tracking-[0.2em]" }, "C\xE1lculo Global"), /* @__PURE__ */ React.createElement("div", { className: "text-lg font-black text-[var(--text-main)] uppercase tracking-tighter" }, "Medida del Shot"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 bg-[#F1F4F9] p-2 rounded-xl border border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("input", { type: "number", step: "0.1", value: shotSize, onChange: (e) => setShotSize(parseFloat(e.target.value) || 0), className: "w-20 bg-white border-2 border-[var(--c-beers-1)] text-center font-black text-[var(--c-beers-2)] text-2xl rounded-lg py-1 focus:border-[var(--c-beers-1)] focus:ring-0 outline-none" }), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-[var(--text-soft)] uppercase tracking-widest pr-2" }, "OZ"))), /* @__PURE__ */ React.createElement("div", { className: "flex p-1 bg-[var(--border-soft)] rounded-xl border border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("products"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === "products" ? "bg-white text-[var(--c-beers-2)] shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, "Products"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("cocktails"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "cocktails" ? "bg-white text-indigo-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Cocktail, { size: 14 }), " Cocktails"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("pitchers"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "pitchers" ? "bg-white text-amber-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Pitcher, { size: 14 }), " Pitchers"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("import"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "import" ? "bg-white text-emerald-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 14 }), " Import")), activeTab !== "import" && /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(Icons.Search, { className: "absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-soft)]", size: 18 }), /* @__PURE__ */ React.createElement("input", { type: "text", placeholder: `SEARCH ${activeTab.toUpperCase()}...`, className: "w-full bg-white border border-[var(--border-soft)] rounded-xl pl-12 pr-4 py-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--c-beers-1)] transition-all font-bold text-sm shadow-sm", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value) }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6 space-y-8 bg-[#F1F4F9]" }, activeTab === "products" ? filteredData.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat.category, className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "sticky top-0 bg-[var(--bg-body)]/95 backdrop-blur-sm py-3 z-10 border-b border-[var(--border-soft)] flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-1 h-4 bg-[var(--c-beers-1)] rounded-full" }), /* @__PURE__ */ React.createElement("h3", { className: "text-[var(--c-beers-2)] font-black text-sm uppercase tracking-[0.2em]" }, cat.category)), /* @__PURE__ */ React.createElement("div", { className: "grid gap-4" }, cat.items.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-white p-6 rounded-2xl border border-[var(--border-soft)] flex flex-col gap-4 shadow-sm hover:border-blue-300 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center pb-2 border-b border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("span", { className: "font-black text-[var(--text-main)] text-lg tracking-wide" }, item.name), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-600 font-mono font-black text-xl bg-emerald-50 px-4 py-1 rounded-lg border border-emerald-100" }, "Total: ", item.sales || 0)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, "Bottles/Units"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-[#F1F4F9] border-2 border-[var(--border-soft)] rounded-2xl text-center text-[var(--text-main)] font-mono text-4xl font-black focus:border-[var(--c-beers-1)] outline-none transition-all", value: item.sold_bottles || "", onChange: (e) => handleLocalSalesChange(item, "bottles", e.target.value, cat.category) })), /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, cat.category.includes("Beers") || cat.category.includes("Seltzer") || cat.category.includes("Non Alcoholic") ? "Buckets (x6)" : "Shots"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-[#F1F4F9] border-2 border-[var(--border-soft)] rounded-2xl text-center text-[var(--text-main)] font-mono text-4xl font-black focus:border-[var(--c-beers-1)] outline-none transition-all", value: item.sold_shots || "", onChange: (e) => handleLocalSalesChange(item, "shots", e.target.value, cat.category) })), /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, "Comps"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-emerald-50/50 border-2 border-emerald-100 rounded-2xl text-center text-emerald-700 font-mono text-4xl font-black focus:border-emerald-500 outline-none transition-all", value: item.sold_comps || "", onChange: (e) => handleLocalSalesChange(item, "comps", e.target.value, cat.category) })))))))) : activeTab === "cocktails" ? renderRecipeList(filteredCocktails) : activeTab === "pitchers" ? renderRecipeList(filteredPitchers) : /* @__PURE__ */ React.createElement(ImportSalesPanel, { data, onBatchUpdate, shotSize })));
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-white flex flex-col z-[85] animate-in overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.DollarSign, { className: "text-emerald-500" }), " POS CALCULATOR"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-6 py-2 bg-[#F1F4F9] text-[var(--text-soft)] rounded-lg hover:bg-[var(--border-soft)] font-bold text-xs uppercase tracking-widest border border-[var(--border-soft)] transition-all" }, "Exit")), /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-[var(--border-soft)] bg-[#F1F4F9] space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white p-4 rounded-2xl border-2 border-[var(--c-beers-1)] flex items-center justify-between shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-[var(--c-beers-1)] text-white rounded-xl shadow-lg shadow-blue-200" }, /* @__PURE__ */ React.createElement(Icons.Settings, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--c-beers-1)] font-black uppercase tracking-[0.2em]" }, "C\xE1lculo Global"), /* @__PURE__ */ React.createElement("div", { className: "text-lg font-black text-[var(--text-main)] uppercase tracking-tighter" }, "Medida del Shot"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 bg-[#F1F4F9] p-2 rounded-xl border border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("input", { type: "number", step: "0.1", value: shotSize, onChange: (e) => setShotSize(parseFloat(e.target.value) || 0), className: "w-20 bg-white border-2 border-[var(--c-beers-1)] text-center font-black text-[var(--c-beers-2)] text-2xl rounded-lg py-1 focus:border-[var(--c-beers-1)] focus:ring-0 outline-none" }), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-[var(--text-soft)] uppercase tracking-widest pr-2" }, "OZ"))), /* @__PURE__ */ React.createElement("div", { className: "flex p-1 bg-[var(--border-soft)] rounded-xl border border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("products"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === "products" ? "bg-white text-[var(--c-beers-2)] shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, "Products"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("cocktails"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "cocktails" ? "bg-white text-indigo-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Cocktail, { size: 14 }), " Cocktails"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("pitchers"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "pitchers" ? "bg-white text-amber-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Pitcher, { size: 14 }), " Pitchers"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("import"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "import" ? "bg-white text-emerald-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 14 }), " Import")), activeTab !== "import" && /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(Icons.Search, { className: "absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-soft)]", size: 18 }), /* @__PURE__ */ React.createElement("input", { type: "text", placeholder: `SEARCH ${activeTab.toUpperCase()}...`, className: "w-full bg-white border border-[var(--border-soft)] rounded-xl pl-12 pr-4 py-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--c-beers-1)] transition-all font-bold text-sm shadow-sm", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value) }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6 space-y-8 bg-[#F1F4F9]" }, activeTab === "products" ? filteredData.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat.category, className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "sticky top-0 bg-[var(--bg-body)]/95 backdrop-blur-sm py-3 z-10 border-b border-[var(--border-soft)] flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-1 h-4 bg-[var(--c-beers-1)] rounded-full" }), /* @__PURE__ */ React.createElement("h3", { className: "text-[var(--c-beers-2)] font-black text-sm uppercase tracking-[0.2em]" }, cat.category)), /* @__PURE__ */ React.createElement("div", { className: "grid gap-4" }, cat.items.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-white p-6 rounded-2xl border border-[var(--border-soft)] flex flex-col gap-4 shadow-sm hover:border-blue-300 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center pb-2 border-b border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("span", { className: "font-black text-[var(--text-main)] text-lg tracking-wide" }, item.name), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-600 font-mono font-black text-xl bg-emerald-50 px-4 py-1 rounded-lg border border-emerald-100" }, "Total: ", item.sales || 0)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, "Bottles/Units"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-[#F1F4F9] border-2 border-[var(--border-soft)] rounded-2xl text-center text-[var(--text-main)] font-mono text-4xl font-black focus:border-[var(--c-beers-1)] outline-none transition-all", value: item.sold_bottles || "", onChange: (e) => handleLocalSalesChange(item, "bottles", e.target.value, cat.category) })), /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, cat.category.includes("Beers") || cat.category.includes("Seltzer") || cat.category.includes("Non Alcoholic") ? "Buckets (x6)" : "Shots"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-[#F1F4F9] border-2 border-[var(--border-soft)] rounded-2xl text-center text-[var(--text-main)] font-mono text-4xl font-black focus:border-[var(--c-beers-1)] outline-none transition-all", value: item.sold_shots || "", onChange: (e) => handleLocalSalesChange(item, "shots", e.target.value, cat.category) })), /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, "Comps"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-emerald-50/50 border-2 border-emerald-100 rounded-2xl text-center text-emerald-700 font-mono text-4xl font-black focus:border-emerald-500 outline-none transition-all", value: item.sold_comps || "", onChange: (e) => handleLocalSalesChange(item, "comps", e.target.value, cat.category) })))))))) : activeTab === "cocktails" ? renderRecipeList(filteredCocktails) : activeTab === "pitchers" ? renderRecipeList(filteredPitchers) : /* @__PURE__ */ React.createElement(ImportSalesPanel, { data, onBatchUpdate, shotSize, posPrices, onPosApply })));
 };
 const Header = ({
   onNewPeriod,
@@ -1069,53 +1104,288 @@ const getPriceInfo = (item) => {
   return d ? { price: d[0].toFixed(2), pack: String(d[1]) } : { price: "", pack: "1" };
 };
 const fmtMoney = (n) => "$" + (n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const PricesModal = ({ onClose, data, onSave }) => {
+const DEFAULT_POS_PRICES = {
+  "Modelo": "5.50",
+  "Michelob Ultra Bucket (Copy)": "30.00",
+  "Amaretto Sour": "11.00",
+  "Bacardi": "8.00",
+  "Barton Blue MF": "10.00",
+  "Barton Long Island": "9.23",
+  "Beefeater": "10.00",
+  "Buchanan's 12": "9.85",
+  "Buchanan's 12 BTL": "150.00",
+  "Caipirinha": "6.60",
+  "Casamigos": "10.00",
+  "Coke": "3.14",
+  "Corona Bucket": "30.00",
+  "Corona Extra": "5.13",
+  "Cuba Libre": "10.00",
+  "Don Julio": "9.69",
+  "Don Julio Reposado": "10.91",
+  "Espolon": "10.09",
+  "ESPOLON BLANCO BTL": "208.00",
+  "Espolon Reposado": "12.00",
+  "Fernet Branca": "6.67",
+  "Fernet Coke": "6.67",
+  "Green Tea": "10.00",
+  "Heineken": "5.16",
+  "HENNESSY VS BTL": "208.00",
+  "Hennesy": "10.75",
+  "High Noon (Can)": "5.48",
+  "Jack Daniels": "6.67",
+  "Jagermeister": "10.00",
+  "Jonnie Walker Black": "10.72",
+  "Lemon Drop": "10.00",
+  "Lemon Drop Shot": "5.00",
+  "Malibu": "10.13",
+  "Margarita": "9.80",
+  "Michelob Ultra": "5.50",
+  "Michelob Ultra Bucket": "30.00",
+  "Modelo Beer": "5.32",
+  "Modelo Bucket": "30.00",
+  "Mojito": "9.00",
+  "Old Parr": "11.00",
+  "Pacifico": "5.50",
+  "Patron": "10.00",
+  "Patron Reposado": "12.00",
+  "Patron Silver BTL": "208.00",
+  "Pitchers: Sex On the Beach": "29.23",
+  "Red bull": "4.00",
+  "Sex On the Beach": "9.85",
+  "Sex on the Beach $5": "5.00",
+  "Sprite": "3.14",
+  "Tequila Sunrise": "10.00",
+  "Tito's": "10.64",
+  "Water Bottle": "3.14",
+  "Watermelom Margarita": "10.00",
+  "Well Gin": "5.71",
+  "Well Tequila": "8.00",
+  "Well Vodka": "8.67",
+  "Woodford Reserve": "12.00"
+};
+
+const posKey = (n) => String(n || "").trim().toLowerCase();
+const getPosPrice = (prices, name) => {
+  const k = posKey(name);
+  for (const key in prices || {}) {
+    if (posKey(key) === k) {
+      const v = parseFloat(prices[key]);
+      return isNaN(v) ? null : v;
+    }
+  }
+  return null;
+};
+const preprocessPOS = (text, prices) => {
+  const rows = [];
+  const lines = [];
+  String(text || "").split(/\r?\n/).forEach((line) => {
+    const t = line.trim();
+    if (!t) return;
+    const parts = t.split(/\t+|\s{2,}/).map((x) => x.trim()).filter(Boolean);
+    const last = parts[parts.length - 1];
+    if (parts.length >= 3 && /^\$\s?[\d,]+(\.\d+)?$/.test(last) && /^\d+(\.\d+)?$/.test(parts[parts.length - 2])) {
+      const name = parts[0];
+      const qty = parseFloat(parts[parts.length - 2]);
+      const revenue = parseFloat(last.replace(/[$,\s]/g, ""));
+      const group = parts.length >= 4 ? parts[parts.length - 3] : "";
+      rows.push({ name, group, qty, revenue, hasRevenue: true });
+      lines.push(name + " - " + qty);
+      return;
+    }
+    lines.push(t);
+    [...t.matchAll(/([^-\n]+?)\s*-\s*(\d+(?:\.\d+)?)/g)].forEach((m) => {
+      const name = m[1].trim();
+      const qty = parseFloat(m[2]);
+      if (name && qty > 0) {
+        const p = getPosPrice(prices, name);
+        rows.push({ name, group: "", qty, revenue: p === null ? null : p * qty, hasRevenue: false });
+      }
+    });
+  });
+  return { text: lines.join("\n"), rows };
+};
+const parsePriceList = (text) => {
+  const out = [];
+  const re = /([^$]*)\$\s*(\d[\d,]*(?:\.\d+)?)/g;
+  let m;
+  while (m = re.exec(String(text || ""))) {
+    const name = m[1].replace(/[\t\r\n]+/g, " ").trim();
+    const price = parseFloat(m[2].replace(/,/g, ""));
+    if (!name) {
+      if (out.length) {
+        const p = out[out.length - 1];
+        p.name = p.name + " $" + p.raw;
+        p.price = price;
+        p.raw = m[2];
+      }
+      continue;
+    }
+    out.push({ name, price, raw: m[2] });
+  }
+  return out;
+};
+const computePosApply = (rows, prices, sold, updatePrices) => {
+  const newPrices = __spreadValues({}, prices || {});
+  const newSold = __spreadValues({}, sold || {});
+  let revenue = 0;
+  let priceChanges = 0;
+  const missing = [];
+  rows.forEach((r) => {
+    const pk = Object.keys(newPrices).find((k) => posKey(k) === posKey(r.name));
+    let rev = r.revenue;
+    if (r.hasRevenue) {
+      if (r.qty > 0 && r.revenue > 0 && (!pk || updatePrices)) {
+        const np = (Math.round(r.revenue / r.qty * 100) / 100).toFixed(2);
+        if (pk) {
+          if (parseFloat(newPrices[pk]) !== parseFloat(np)) priceChanges++;
+          newPrices[pk] = np;
+        } else newPrices[r.name] = np;
+      }
+    } else if (rev === null) {
+      if (!pk) newPrices[r.name] = "";
+      missing.push(r.name);
+      rev = 0;
+    }
+    revenue += rev;
+    const sk = Object.keys(newSold).find((k) => posKey(k) === posKey(r.name)) || r.name;
+    const prev = newSold[sk] || { qty: 0, revenue: 0, group: "" };
+    newSold[sk] = { qty: prev.qty + r.qty, revenue: Math.round((prev.revenue + rev) * 100) / 100, group: r.group || prev.group || "" };
+  });
+  return { newPrices, newSold, revenue, missing, priceChanges };
+};
+const PricesModal = ({ onClose, data, onSave, posPrices, onSavePos }) => {
   const h = React.createElement;
+  const [tab, setTab] = useState("cost");
   const [searchTerm, setSearchTerm] = useState("");
   const [edits, setEdits] = useState({});
+  const [posLocal, setPosLocal] = useState(() => __spreadValues({}, posPrices || {}));
+  const [posDirty, setPosDirty] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPrice, setNewPrice] = useState("");
+  const [listText, setListText] = useState("");
+  const [listResult, setListResult] = useState(null);
+  const importList = () => {
+    const parsedList = parsePriceList(listText);
+    if (parsedList.length === 0) {
+      setListResult({ error: "No prices found. Each item needs a name followed by a $ price." });
+      return;
+    }
+    const merged = __spreadValues({}, posLocal);
+    const changed = [];
+    const added = [];
+    let same = 0;
+    parsedList.forEach((it) => {
+      const key = Object.keys(merged).find((k) => posKey(k) === posKey(it.name));
+      const np = it.price.toFixed(2);
+      if (key) {
+        if (parseFloat(merged[key]) === it.price) same++;
+        else {
+          changed.push({ name: key, from: merged[key], to: np });
+          merged[key] = np;
+        }
+      } else {
+        merged[it.name] = np;
+        added.push({ name: it.name, to: np });
+      }
+    });
+    setPosLocal(merged);
+    setPosDirty(false);
+    if (onSavePos) onSavePos(merged);
+    setListResult({ changed, added, same });
+    setListText("");
+  };
   const getVal = (item) => edits[item.id] || getPriceInfo(item);
   const setField = (item, field, val) => {
     const cur = getVal(item);
     setEdits((prev) => __spreadProps(__spreadValues({}, prev), { [item.id]: __spreadProps(__spreadValues({}, cur), { [field]: val }) }));
   };
+  const setPos = (name, val) => {
+    setPosLocal((prev) => __spreadProps(__spreadValues({}, prev), { [name]: val }));
+    setPosDirty(true);
+  };
+  const removePos = (name) => {
+    setPosLocal((prev) => {
+      const c = __spreadValues({}, prev);
+      delete c[name];
+      return c;
+    });
+    setPosDirty(true);
+  };
+  const addPos = () => {
+    const n = newName.trim();
+    if (!n) return;
+    const existing = Object.keys(posLocal).find((k) => posKey(k) === posKey(n));
+    setPos(existing || n, newPrice);
+    setNewName("");
+    setNewPrice("");
+  };
   const handleSave = () => {
     const updates = Object.keys(edits).map((id) => ({ id, changes: { price: edits[id].price, pack: edits[id].pack } }));
-    onSave(updates);
+    onSave(updates, posDirty ? posLocal : null);
   };
   const inp = { border: "1px solid var(--border-soft)", borderRadius: 10, padding: "8px 10px", fontSize: 14, fontWeight: 700, width: "100%", background: "#fff", color: "var(--text-main)", textAlign: "right" };
   const cols = { display: "grid", gridTemplateColumns: "minmax(160px,1fr) 120px 90px 110px", gap: 12, alignItems: "center" };
+  const colsPos = { display: "grid", gridTemplateColumns: "minmax(160px,1fr) 130px 40px", gap: 12, alignItems: "center" };
   const q = searchTerm.toLowerCase();
-  const editedCount = Object.keys(edits).length;
+  const editedCount = Object.keys(edits).length + (posDirty ? 1 : 0);
+  const tabBtn = (id, label) => h("button", { onClick: () => setTab(id), style: { padding: "10px 18px", borderRadius: 12, fontWeight: 800, fontSize: 12, letterSpacing: 1, border: "1px solid var(--border-soft)", background: tab === id ? "var(--c-beers-2, #0B3FAE)" : "#fff", color: tab === id ? "#fff" : "var(--text-soft)", cursor: "pointer" } }, label);
+  const costBody = h("div", { style: { flex: 1, overflowY: "auto", padding: "8px 24px 40px" } },
+    h("div", { style: __spreadProps(__spreadValues({}, cols), { padding: "10px 0", fontSize: 11, fontWeight: 800, color: "var(--text-soft)", letterSpacing: 1, position: "sticky", top: 0, background: "#fff", zIndex: 2 }) },
+      h("div", null, "PRODUCT"), h("div", { style: { textAlign: "right" } }, "PRICE ($)"), h("div", { style: { textAlign: "right" } }, "UNITS IN PACK"), h("div", { style: { textAlign: "right" } }, "COST PER UNIT")),
+    data.map((cat) => {
+      const items = cat.items.filter((i) => i.name.toLowerCase().includes(q));
+      if (items.length === 0) return null;
+      return h("div", { key: cat.category, style: { marginTop: 14 } },
+        h("div", { style: { fontSize: 12, fontWeight: 900, color: "var(--c-beers-2, #0B3FAE)", letterSpacing: 1.5, textTransform: "uppercase", margin: "10px 0 6px" } }, cat.category),
+        items.map((item) => {
+          const v = getVal(item);
+          const p = parseFloat(v.price);
+          const k = parseFloat(v.pack) || 1;
+          const unit = !isNaN(p) ? p / k : null;
+          return h("div", { key: item.id, style: __spreadProps(__spreadValues({}, cols), { padding: "6px 0", borderBottom: "1px solid #F1F4F9" }) },
+            h("div", { style: { fontWeight: 700, fontSize: 14, color: "var(--text-main)" } }, item.name),
+            h("input", { type: "number", step: "0.01", min: "0", value: v.price, placeholder: "0.00", onChange: (e) => setField(item, "price", e.target.value), style: inp }),
+            h("input", { type: "number", step: "1", min: "1", value: v.pack, onChange: (e) => setField(item, "pack", e.target.value), style: inp }),
+            h("div", { style: { textAlign: "right", fontWeight: 800, fontSize: 14, color: unit === null ? "#CBD3E1" : "var(--text-main)" } }, unit === null ? "—" : fmtMoney(unit)));
+        }));
+    }));
+  const posNames = Object.keys(posLocal).filter((n) => n.toLowerCase().includes(q)).sort((a, b) => a.localeCompare(b));
+  const saleBody = h("div", { style: { flex: 1, overflowY: "auto", padding: "8px 24px 40px" } },
+    h("div", { style: { fontSize: 12, color: "var(--text-soft)", margin: "10px 0 14px", maxWidth: 640 } }, "Price you charge in the POS for each menu item (what the customer pays). Used to calculate sales in dollars when you import a list without $ amounts. Change any price here when it goes up, or add items that are missing. Items ending in BTL are bottle prices."),
+    h("div", { style: { padding: 14, background: "#F8FAFC", border: "1px solid var(--border-soft)", borderRadius: 14, marginBottom: 14 } },
+      h("div", { style: { fontSize: 12, fontWeight: 800, color: "var(--text-main)", marginBottom: 8, letterSpacing: 0.5 } }, "UPDATE FROM A PRICE LIST (weekly)"),
+      h("textarea", { rows: 3, placeholder: "Paste the list here, for example: Amaretto Sour$11.00Bacardi$8.00Buchanan's 12 BTL$150.00 ...", value: listText, onChange: (e) => setListText(e.target.value), style: { width: "100%", border: "1px solid var(--border-soft)", borderRadius: 10, padding: 10, fontSize: 13, fontFamily: "inherit" } }),
+      h("button", { onClick: importList, disabled: !listText.trim(), style: { marginTop: 8, background: listText.trim() ? "#0D9488" : "#CBD3E1", color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", fontWeight: 800, fontSize: 12, cursor: listText.trim() ? "pointer" : "default" } }, "UPDATE PRICES FROM LIST"),
+      listResult && listResult.error && h("div", { style: { color: "#BE123C", fontSize: 13, fontWeight: 700, marginTop: 8 } }, listResult.error),
+      listResult && !listResult.error && h("div", { style: { marginTop: 10, fontSize: 13, color: "var(--text-main)" } },
+        h("div", { style: { fontWeight: 800, color: "#047857" } }, "Saved: " + listResult.changed.length + " updated, " + listResult.added.length + " new, " + listResult.same + " unchanged."),
+        listResult.changed.length > 0 && h("div", { style: { marginTop: 6, maxHeight: 160, overflowY: "auto" } }, listResult.changed.map((c) => h("div", { key: c.name, style: { display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px solid #E7EBF2" } }, h("span", null, c.name), h("span", { style: { fontWeight: 700 } }, fmtMoney(parseFloat(c.from) || 0) + " \u2192 " + fmtMoney(parseFloat(c.to)))))),
+        listResult.added.length > 0 && h("div", { style: { marginTop: 6, color: "#2563EB", fontWeight: 700 } }, "New: " + listResult.added.map((a) => a.name).join(", ")))),
+    h("div", { style: __spreadProps(__spreadValues({}, colsPos), { padding: "10px 12px", background: "#F8FAFC", border: "1px solid var(--border-soft)", borderRadius: 14, marginBottom: 14 }) },
+      h("input", { type: "text", placeholder: "New POS item name (exactly as in the POS)", value: newName, onChange: (e) => setNewName(e.target.value), style: __spreadProps(__spreadValues({}, inp), { textAlign: "left" }) }),
+      h("input", { type: "number", step: "0.01", min: "0", placeholder: "Price", value: newPrice, onChange: (e) => setNewPrice(e.target.value), style: inp }),
+      h("button", { onClick: addPos, title: "Add", style: { background: "#0D9488", color: "#fff", border: "none", borderRadius: 10, fontWeight: 900, fontSize: 18, height: 38, cursor: "pointer" } }, "+")),
+    h("div", { style: __spreadProps(__spreadValues({}, colsPos), { padding: "10px 0", fontSize: 11, fontWeight: 800, color: "var(--text-soft)", letterSpacing: 1 }) }, h("div", null, "POS ITEM"), h("div", { style: { textAlign: "right" } }, "SALE PRICE ($)"), h("div", null)),
+    posNames.length === 0 && h("div", { style: { color: "var(--text-soft)", fontSize: 13, padding: 12 } }, "No POS items yet."),
+    posNames.map((name) => {
+      const blank = posLocal[name] === "" || posLocal[name] === undefined;
+      return h("div", { key: name, style: __spreadProps(__spreadValues({}, colsPos), { padding: "6px 0", borderBottom: "1px solid #F1F4F9" }) },
+        h("div", { style: { fontWeight: 700, fontSize: 14, color: "var(--text-main)" } }, name),
+        h("input", { type: "number", step: "0.01", min: "0", placeholder: "Set price", value: posLocal[name], onChange: (e) => setPos(name, e.target.value), style: __spreadProps(__spreadValues({}, inp), { borderColor: blank ? "#F43F5E" : "var(--border-soft)" }) }),
+        h("button", { onClick: () => removePos(name), title: "Remove", style: { background: "transparent", border: "none", color: "#CBD3E1", fontSize: 18, cursor: "pointer" } }, "✕"));
+    }));
   return h("div", { className: "fixed inset-0 bg-white flex flex-col z-[90] animate-in overflow-hidden" },
     h("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" },
       h("div", null,
-        h("h2", { className: "text-2xl font-black text-[var(--text-main)]" }, "PRODUCT PRICES ($)"),
-        h("div", { style: { fontSize: 12, color: "var(--text-soft)", marginTop: 4 } }, "Price you pay per bottle. For cases, enter the case price and how many units it has.")),
+        h("h2", { className: "text-2xl font-black text-[var(--text-main)]" }, "PRICES ($)"),
+        h("div", { style: { fontSize: 12, color: "var(--text-soft)", marginTop: 4 } }, tab === "cost" ? "What you pay per bottle. For cases, enter the case price and how many units it has." : "What you charge in the POS.")),
       h("div", { style: { display: "flex", gap: 10 } },
-        h("button", { onClick: handleSave, disabled: editedCount === 0, style: { background: editedCount ? "var(--c-beers-2, #0B3FAE)" : "#CBD3E1", color: "#fff", padding: "10px 22px", borderRadius: 12, fontWeight: 800, fontSize: 13, border: "none", cursor: editedCount ? "pointer" : "default" } }, editedCount ? "SAVE PRICES (" + editedCount + ")" : "SAVE PRICES"),
+        h("button", { onClick: handleSave, disabled: editedCount === 0, style: { background: editedCount ? "var(--c-beers-2, #0B3FAE)" : "#CBD3E1", color: "#fff", padding: "10px 22px", borderRadius: 12, fontWeight: 800, fontSize: 13, border: "none", cursor: editedCount ? "pointer" : "default" } }, editedCount ? "SAVE PRICES *" : "SAVE PRICES"),
         h("button", { onClick: onClose, className: "bg-[#F1F4F9] hover:bg-[var(--border-soft)] text-[var(--text-soft)] px-6 rounded-xl font-bold border border-[var(--border-soft)] text-xs" }, "Close"))),
-    h("div", { style: { padding: "12px 24px", borderBottom: "1px solid var(--border-soft)" } },
-      h("input", { type: "text", placeholder: "Search product...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), style: __spreadProps(__spreadValues({}, inp), { textAlign: "left", maxWidth: 420 }) })),
-    h("div", { style: { flex: 1, overflowY: "auto", padding: "8px 24px 40px" } },
-      h("div", { style: __spreadProps(__spreadValues({}, cols), { padding: "10px 0", fontSize: 11, fontWeight: 800, color: "var(--text-soft)", letterSpacing: 1, position: "sticky", top: 0, background: "#fff", zIndex: 2 }) },
-        h("div", null, "PRODUCT"), h("div", { style: { textAlign: "right" } }, "PRICE ($)"), h("div", { style: { textAlign: "right" } }, "UNITS IN PACK"), h("div", { style: { textAlign: "right" } }, "COST PER UNIT")),
-      data.map((cat) => {
-        const items = cat.items.filter((i) => i.name.toLowerCase().includes(q));
-        if (items.length === 0) return null;
-        return h("div", { key: cat.category, style: { marginTop: 14 } },
-          h("div", { style: { fontSize: 12, fontWeight: 900, color: "var(--c-beers-2, #0B3FAE)", letterSpacing: 1.5, textTransform: "uppercase", margin: "10px 0 6px" } }, cat.category),
-          items.map((item) => {
-            const v = getVal(item);
-            const p = parseFloat(v.price);
-            const k = parseFloat(v.pack) || 1;
-            const unit = !isNaN(p) ? p / k : null;
-            return h("div", { key: item.id, style: __spreadProps(__spreadValues({}, cols), { padding: "6px 0", borderBottom: "1px solid #F1F4F9" }) },
-              h("div", { style: { fontWeight: 700, fontSize: 14, color: "var(--text-main)" } }, item.name),
-              h("input", { type: "number", step: "0.01", min: "0", value: v.price, placeholder: "0.00", onChange: (e) => setField(item, "price", e.target.value), style: inp }),
-              h("input", { type: "number", step: "1", min: "1", value: v.pack, onChange: (e) => setField(item, "pack", e.target.value), style: inp }),
-              h("div", { style: { textAlign: "right", fontWeight: 800, fontSize: 14, color: unit === null ? "#CBD3E1" : "var(--text-main)" } }, unit === null ? "—" : fmtMoney(unit)));
-          }));
-      })));
+    h("div", { style: { padding: "12px 24px", borderBottom: "1px solid var(--border-soft)", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" } },
+      tabBtn("cost", "COST (what I pay)"), tabBtn("sale", "POS SALE PRICES"),
+      h("input", { type: "text", placeholder: "Search...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), style: __spreadProps(__spreadValues({}, inp), { textAlign: "left", maxWidth: 320, marginLeft: "auto" }) })),
+    tab === "cost" ? costBody : saleBody);
 };
 const createItem = (id, name) => ({
   id,
@@ -1225,6 +1495,9 @@ function App() {
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [showBottleSpecs, setShowBottleSpecs] = useState(false);
   const [showPrices, setShowPrices] = useState(false);
+  const [posPrices, setPosPrices] = useState(DEFAULT_POS_PRICES);
+  const [posSold, setPosSold] = useState({});
+  const POS_LOCAL_KEY = "bar-pos-extra-v1";
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showResetSecurity, setShowResetSecurity] = useState(false);
   const [showSpecsSecurity, setShowSpecsSecurity] = useState(false);
@@ -1283,6 +1556,13 @@ function App() {
               setIsCloud(true);
               const collectionPath = ENV_APP_ID !== "default-app-id" ? `artifacts/${ENV_APP_ID}/public/data/inventory` : "inventory";
               const docRef = fb.doc(db, collectionPath, "master");
+              fb.onSnapshot(fb.doc(db, collectionPath, "pos"), (ps) => {
+                if (ps.exists()) {
+                  const d = ps.data();
+                  if (d.posPrices) setPosPrices(d.posPrices);
+                  if (d.posSold) setPosSold(d.posSold);
+                }
+              }, (e) => console.warn(e));
               fb.onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                   const docData = docSnap.data();
@@ -1330,6 +1610,15 @@ function App() {
       const saved = SafeStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) setData(JSON.parse(saved));
       else setData(INITIAL_DATA);
+      try {
+        const ex = SafeStorage.getItem("bar-pos-extra-v1");
+        if (ex) {
+          const j = JSON.parse(ex);
+          if (j.posPrices) setPosPrices(j.posPrices);
+          if (j.posSold) setPosSold(j.posSold);
+        }
+      } catch (e) {
+      }
       setLoading(false);
     };
     initApp();
@@ -1441,6 +1730,9 @@ function App() {
     const valCats = [];
     let grandValue = 0;
     let unpricedCount = 0;
+    let startValue = 0;
+    let salesCostValue = 0;
+    const posRevenue = Object.values(posSold || {}).reduce((acc, e) => acc + (e.revenue || 0), 0);
     data.forEach((cat) => {
       let sub = 0;
       const rows = [];
@@ -1448,6 +1740,8 @@ function App() {
         const qty = (parseFloat(item.bar1) || 0) + (parseFloat(item.bar2) || 0) + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
         const unit = getUnitCost(item);
         const v = qty * unit;
+        startValue += ((parseFloat(item.start_bar1) || 0) + (parseFloat(item.start_bar2) || 0) + (parseFloat(item.start_bodega) || 0) + (parseFloat(item.start_barroluco) || 0)) * unit;
+        salesCostValue += (parseFloat(item.sales) || 0) * unit;
         if (qty > 0) {
           if (unit === 0) unpricedCount++;
           rows.push([item.name, String(Number(qty.toFixed(2))), unit ? money(unit) : "no price", money(v)]);
@@ -1596,7 +1890,7 @@ function App() {
     doc.roundedRect(15, 28, 3, 24, 1.5, 1.5, "F");
     doc.setFontSize(8);
     doc.setTextColor(107, 117, 136);
-    doc.text("TOTAL INVENTORY VALUE", 105, 36, { align: "center" });
+    doc.text("TOTAL INVENTORY VALUE (COUNT END, AT COST)", 105, 36, { align: "center" });
     doc.setFontSize(22);
     doc.setTextColor(13, 148, 136);
     doc.text(money(grandValue), 105, 47, { align: "center" });
@@ -1613,7 +1907,8 @@ function App() {
       valBody.push([{ content: "Subtotal", colSpan: 3, styles: { halign: "right", fontStyle: "bold", fillColor: [241, 244, 249] } }, { content: money(c.sub), styles: { halign: "right", fontStyle: "bold", fillColor: [241, 244, 249] } }]);
     });
     valBody.push([{ content: "TOTAL INVENTORY VALUE", colSpan: 3, styles: { halign: "right", fontStyle: "bold", fillColor: [13, 148, 136], textColor: 255 } }, { content: money(grandValue), styles: { halign: "right", fontStyle: "bold", fillColor: [13, 148, 136], textColor: 255 } }]);
-    doc.autoTable({ startY: 122, head: [["Product", "On Hand", "Cost / Unit", "Value"]], body: valBody, theme: "grid", headStyles: { fillColor: [30, 36, 51], textColor: 255, fontStyle: "bold", fontSize: 8.5 }, styles: { fontSize: 8.5, cellPadding: 2 }, columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } } });
+    doc.autoTable({ startY: 122, head: [["Summary", "Amount"]], body: [["On Hand (Start) - at cost", money(startValue)], ["Count End (Physical) - at cost", money(grandValue)], ["Cost of Sales - at cost", money(salesCostValue)], ["POS Sales Revenue - selling price", money(posRevenue)]], theme: "grid", headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: "bold", fontSize: 8.5 }, styles: { fontSize: 8.5, cellPadding: 2 }, columnStyles: { 1: { halign: "right", fontStyle: "bold" } } });
+    doc.autoTable({ startY: doc.lastAutoTable.finalY + 8, head: [["Product", "On Hand", "Cost / Unit", "Value"]], body: valBody, theme: "grid", headStyles: { fillColor: [30, 36, 51], textColor: 255, fontStyle: "bold", fontSize: 8.5 }, styles: { fontSize: 8.5, cellPadding: 2 }, columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } } });
     if (unpricedCount > 0) {
       const ny = doc.lastAutoTable.finalY + 6;
       doc.setFontSize(8);
@@ -1739,6 +2034,22 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
       }, 2e3);
     } else {
       SafeStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
+    }
+  };
+  const savePosExtra = (prices, sold) => {
+    setPosPrices(prices);
+    setPosSold(sold);
+    const fb = window.fb;
+    if (isCloud && user && fb) {
+      try {
+        const db = fb.getFirestore();
+        const cp = ENV_APP_ID !== "default-app-id" ? `artifacts/${ENV_APP_ID}/public/data/inventory` : "inventory";
+        fb.setDoc(fb.doc(db, cp, "pos"), { posPrices: prices, posSold: sold }).catch(console.error);
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      SafeStorage.setItem(POS_LOCAL_KEY, JSON.stringify({ posPrices: prices, posSold: sold }));
     }
   };
   const showNotification = (msg) => {
@@ -1923,6 +2234,7 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
           })
         }));
         saveData(newData);
+        savePosExtra(posPrices, {});
         setModalConfig(null);
         showNotification("PERIOD ENDED: HISTORY SAVED");
       }
@@ -1931,6 +2243,7 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
   const performFactoryReset = () => {
     if (securityCode === "Enzo2022") {
       saveData(INITIAL_DATA);
+      savePosExtra(posPrices, {});
       setShowResetSecurity(false);
       setSecurityCode("");
       playSound("success");
@@ -1960,6 +2273,7 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
         { label: "Counts Only", class: "bg-blue-50 hover:bg-blue-100 text-[var(--c-beers-2)] border border-blue-200", onClick: () => {
           const newData = data.map((cat) => __spreadProps(__spreadValues({}, cat), { items: cat.items.map((item) => __spreadProps(__spreadValues({}, item), { bar1: "", bar2: "", bodega: "", barroluco: "", start_bar1: "", start_bar2: "", start_bodega: "", start_barroluco: "", purchases: "", sales: "", sold_bottles: "", sold_shots: "", sold_comps: "", bar1_cooler: "", bar1_small_cooler_1: "", bar1_small_cooler_2: "", bar1_reaching: "", bar1_shelf_full: "", bar1_shelf_open: "", bar1_well_1: "", bar1_well_2: "", bar2_cooler: "", bar2_small_cooler: "", bodega_closet: "", bodega_shelves: "" })) }));
           saveData(newData);
+          savePosExtra(posPrices, {});
           setModalConfig(null);
           showNotification("COUNTS RESET");
         } },
@@ -2113,8 +2427,13 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
   }, className: "bg-[#F1F4F9] hover:bg-[var(--border-soft)] text-[var(--text-soft)] px-6 rounded-xl font-bold border border-[var(--border-soft)] text-xs" }, "Close")))), /* @__PURE__ */ React.createElement("input", { type: "file", ref: fileInputRef, style: { display: "none" }, accept: ".json", onChange: handleRestoreFile }), /* @__PURE__ */ React.createElement("main", { className: "max-w-7xl mx-auto p-6 space-y-6 pt-8" }, categoryFilter && /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between bg-amber-50 border border-amber-200 p-4 rounded-xl mb-6 shadow-sm" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-700 font-bold text-sm uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-2 h-2 bg-amber-500 rounded-full animate-pulse" }), " FILTER ACTIVE: ", categoryFilter), /* @__PURE__ */ React.createElement("button", { onClick: () => setCategoryFilter(null), className: "text-[var(--text-soft)] hover:text-[var(--text-main)] text-xs font-bold uppercase tracking-widest hover:underline transition-all" }, "Clear Filter")), filteredData.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "text-center py-32 text-[var(--text-soft)] uppercase tracking-widest font-medium" }, /* @__PURE__ */ React.createElement("p", null, "No entries found in database.")), filteredData.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat.category, className: "mb-8" }, !searchTerm && /* @__PURE__ */ React.createElement(CategoryHeader, { title: cat.category, icon: getIcon(cat.category), colorClass: getCatColorClass(cat.category), isOpen: openCategories[cat.category], toggle: () => setOpenCategories((prev) => __spreadProps(__spreadValues({}, prev), { [cat.category]: !prev[cat.category] })) }), (openCategories[cat.category] || searchTerm || categoryFilter) && /* @__PURE__ */ React.createElement("div", { className: "grid gap-3 sm:grid-cols-1 lg:grid-cols-2" }, cat.items.map((item) => /* @__PURE__ */ React.createElement(InventoryRow, { key: item.id, item, onUpdate: updateItem, pendingBarcode, isWells: cat.category.includes("Wells"), categoryName: cat.category, onScanRequest: requestItemScan, onDelete: handleDeleteProduct })))))), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowAddProduct(true), className: "fixed bottom-8 right-8 z-40 bg-[var(--c-beers-2)] text-white p-5 rounded-full shadow-lg hover:opacity-90 hover:shadow-xl transition-all active:scale-95 group", title: "New Entry" }, /* @__PURE__ */ React.createElement(Icons.Plus, { size: 32, className: "group-hover:rotate-90 transition-transform duration-300" })), /* @__PURE__ */ React.createElement(ConfirmationModal, { isOpen: !!modalConfig, onClose: () => setModalConfig(null), onConfirm: modalConfig == null ? void 0 : modalConfig.onConfirm, title: modalConfig == null ? void 0 : modalConfig.title, message: modalConfig == null ? void 0 : modalConfig.message, isDestructive: modalConfig == null ? void 0 : modalConfig.isDestructive, customActions: modalConfig == null ? void 0 : modalConfig.customActions }), /* @__PURE__ */ React.createElement(ImportModal, { isOpen: showImportModal, onClose: () => {
     setShowImportModal(false);
     setPendingImportData(null);
-  }, onReplace: handleReplaceData, onMerge: handleMergeData }), /* @__PURE__ */ React.createElement(AddProductModal, { isOpen: showAddProduct, onClose: () => setShowAddProduct(false), onAdd: handleAddNewProduct, categories: data.map((c) => c.category) }), showCharts && /* @__PURE__ */ React.createElement(ChartsView, { data, onClose: () => setShowCharts(false) }), showShopping && /* @__PURE__ */ React.createElement(ShoppingListModal, { isOpen: showShopping, onClose: () => setShowShopping(false), items: shoppingItems }), showPurchasesLog && /* @__PURE__ */ React.createElement(PurchasesLogModal, { isOpen: showPurchasesLog, onClose: () => setShowPurchasesLog(false), data }), showSalesEntry && /* @__PURE__ */ React.createElement(SalesEntryModal, { isOpen: showSalesEntry, onClose: () => setShowSalesEntry(false), data, onUpdate: updateItem, onBatchUpdate: batchUpdateItems }), showCountReview && /* @__PURE__ */ React.createElement(CountReviewModal, { isOpen: showCountReview, onClose: () => setShowCountReview(false), data, onUpdate: updateItem }), /* @__PURE__ */ React.createElement(PremiumControlModal, { isOpen: showPremiumModal, onClose: () => setShowPremiumModal(false), data, onUpdateStickers: updateItemStickers }), /* @__PURE__ */ React.createElement(BottleSpecsModal, { isOpen: showBottleSpecs, onClose: () => setShowBottleSpecs(false), data, onUpdate: updateItem }), showPrices && /* @__PURE__ */ React.createElement(PricesModal, { onClose: () => setShowPrices(false), data, onSave: (ups) => {
+  }, onReplace: handleReplaceData, onMerge: handleMergeData }), /* @__PURE__ */ React.createElement(AddProductModal, { isOpen: showAddProduct, onClose: () => setShowAddProduct(false), onAdd: handleAddNewProduct, categories: data.map((c) => c.category) }), showCharts && /* @__PURE__ */ React.createElement(ChartsView, { data, posSold, onClose: () => setShowCharts(false) }), showShopping && /* @__PURE__ */ React.createElement(ShoppingListModal, { isOpen: showShopping, onClose: () => setShowShopping(false), items: shoppingItems }), showPurchasesLog && /* @__PURE__ */ React.createElement(PurchasesLogModal, { isOpen: showPurchasesLog, onClose: () => setShowPurchasesLog(false), data }), showSalesEntry && /* @__PURE__ */ React.createElement(SalesEntryModal, { isOpen: showSalesEntry, onClose: () => setShowSalesEntry(false), data, onUpdate: updateItem, onBatchUpdate: batchUpdateItems, posPrices, onPosApply: (rows, upd) => {
+    const r = computePosApply(rows, posPrices, posSold, upd);
+    savePosExtra(r.newPrices, r.newSold);
+    return r;
+  } }), showCountReview && /* @__PURE__ */ React.createElement(CountReviewModal, { isOpen: showCountReview, onClose: () => setShowCountReview(false), data, onUpdate: updateItem }), /* @__PURE__ */ React.createElement(PremiumControlModal, { isOpen: showPremiumModal, onClose: () => setShowPremiumModal(false), data, onUpdateStickers: updateItemStickers }), /* @__PURE__ */ React.createElement(BottleSpecsModal, { isOpen: showBottleSpecs, onClose: () => setShowBottleSpecs(false), data, onUpdate: updateItem }), showPrices && /* @__PURE__ */ React.createElement(PricesModal, { onClose: () => setShowPrices(false), data, posPrices, onSavePos: (pp) => savePosExtra(pp, posSold), onSave: (ups, pp) => {
     if (ups.length) batchUpdateItems(ups);
+    if (pp) savePosExtra(pp, posSold);
     setShowPrices(false);
     showNotification("PRICES SAVED");
   } }), showResetSecurity && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-[var(--text-main)]/40 flex flex-col items-center justify-center z-[110] backdrop-blur-sm animate-in p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white border border-rose-200 w-full max-w-sm rounded-2xl p-8 shadow-2xl text-center relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 w-full h-1 bg-rose-500" }), /* @__PURE__ */ React.createElement(Icons.AlertTriangle, { size: 48, className: "text-rose-500 mx-auto mb-4" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] mb-2 uppercase" }, "Security Check"), /* @__PURE__ */ React.createElement("p", { className: "text-[var(--text-soft)] text-xs mb-6 font-mono" }, "AUTHORIZED PERSONNEL ONLY"), /* @__PURE__ */ React.createElement("input", { type: "password", value: securityCode, onChange: (e) => setSecurityCode(e.target.value), className: "w-full bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl px-4 py-4 text-center text-[var(--text-main)] font-mono text-lg focus:border-rose-500 outline-none mb-6 tracking-widest", placeholder: "ENTER PASSCODE", autoFocus: true }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowResetSecurity(false), className: "flex-1 py-3 rounded-xl bg-[#F1F4F9] text-[var(--text-soft)] hover:text-[var(--text-main)] font-bold text-xs uppercase tracking-wider" }, "Cancel"), /* @__PURE__ */ React.createElement("button", { onClick: performFactoryReset, className: "flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg" }, "Confirm")))), showSpecsSecurity && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-[var(--text-main)]/40 flex flex-col items-center justify-center z-[110] backdrop-blur-sm animate-in p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white border border-indigo-200 w-full max-w-sm rounded-2xl p-8 shadow-2xl text-center relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 w-full h-1 bg-indigo-500" }), /* @__PURE__ */ React.createElement(Icons.Settings, { size: 48, className: "text-indigo-500 mx-auto mb-4" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] mb-2 uppercase" }, "Configuration Access"), /* @__PURE__ */ React.createElement("p", { className: "text-[var(--text-soft)] text-xs mb-6 font-mono" }, "MANAGEMENT AUTHORIZATION REQUIRED"), /* @__PURE__ */ React.createElement("input", { type: "password", value: securityCode, onChange: (e) => setSecurityCode(e.target.value), className: "w-full bg-[#F1F4F9] border border-[var(--border-soft)] rounded-xl px-4 py-4 text-center text-[var(--text-main)] font-mono text-lg focus:border-indigo-500 outline-none mb-6 tracking-widest", placeholder: "ENTER PASSCODE", autoFocus: true }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-3" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowSpecsSecurity(false), className: "flex-1 py-3 rounded-xl bg-[#F1F4F9] text-[var(--text-soft)] hover:text-[var(--text-main)] font-bold text-xs uppercase tracking-wider" }, "Cancel"), /* @__PURE__ */ React.createElement("button", { onClick: verifySpecsAccess, className: "flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg" }, "Access")))), notification && /* @__PURE__ */ React.createElement("div", { className: "fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-[var(--text-main)] text-white px-8 py-4 rounded-2xl shadow-xl border border-[var(--border-soft)] flex items-center gap-4 animate-in z-[100] whitespace-nowrap" }, /* @__PURE__ */ React.createElement(Icons.CheckCircle, { size: 24, className: "text-emerald-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-sm tracking-widest uppercase" }, notification)));
