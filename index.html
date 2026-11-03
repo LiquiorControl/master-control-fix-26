@@ -967,6 +967,203 @@ const SalesEntryModal = ({ isOpen, onClose, data, onUpdate, onBatchUpdate, posPr
   const renderRecipeList = (list) => /* @__PURE__ */ React.createElement("div", { className: "grid gap-3" }, list.map((recipe, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "bg-white p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm flex justify-between items-center hover:border-blue-300 transition-all group" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 mr-4" }, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-[var(--text-main)] text-base" }, recipe.name), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-[var(--text-soft)] mt-1 font-mono" }, recipe.ingredients.map((ing) => `${ing.qty} ${ing.name}`).join(", "))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("input", { type: "number", min: "1", placeholder: "1", className: "w-16 h-14 bg-[#F6F1EB] border border-[var(--border-soft)] rounded-xl px-2 text-center text-[var(--text-main)] font-mono text-xl font-bold focus:border-[var(--c-beers-1)] outline-none", value: recipeQuantities[recipe.name] || "", onChange: (e) => handleRecipeQtyChange(recipe.name, e.target.value) }), /* @__PURE__ */ React.createElement("button", { onClick: () => handleAddRecipe(recipe), className: "px-6 h-14 bg-[#F6F1EB] border border-[var(--border-soft)] text-[var(--text-soft)] hover:bg-[var(--c-beers-2)] hover:text-white rounded-xl font-black text-sm transition-all active:scale-95 shadow-sm whitespace-nowrap uppercase tracking-wider" }, " Add ")))));
   return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-white flex flex-col z-[85] animate-in overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-white" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-black text-[var(--text-main)] flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.DollarSign, { className: "text-emerald-500" }), " POS CALCULATOR"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-6 py-2 bg-[#F6F1EB] text-[var(--text-soft)] rounded-lg hover:bg-[var(--border-soft)] font-bold text-xs uppercase tracking-widest border border-[var(--border-soft)] transition-all" }, "Exit")), /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-[var(--border-soft)] bg-[#F6F1EB] space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white p-4 rounded-2xl border-2 border-[var(--c-beers-1)] flex items-center justify-between shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "p-2 bg-[var(--c-beers-1)] text-white rounded-xl shadow-lg shadow-blue-200" }, /* @__PURE__ */ React.createElement(Icons.Settings, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-[var(--c-beers-1)] font-black uppercase tracking-[0.2em]" }, "C\xE1lculo Global"), /* @__PURE__ */ React.createElement("div", { className: "text-lg font-black text-[var(--text-main)] uppercase tracking-tighter" }, "Medida del Shot"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 bg-[#F6F1EB] p-2 rounded-xl border border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("input", { type: "number", step: "0.1", value: shotSize, onChange: (e) => setShotSize(parseFloat(e.target.value) || 0), className: "w-20 bg-white border-2 border-[var(--c-beers-1)] text-center font-black text-[var(--c-beers-2)] text-2xl rounded-lg py-1 focus:border-[var(--c-beers-1)] focus:ring-0 outline-none" }), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-[var(--text-soft)] uppercase tracking-widest pr-2" }, "OZ"))), /* @__PURE__ */ React.createElement("div", { className: "flex p-1 bg-[var(--border-soft)] rounded-xl border border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("products"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === "products" ? "bg-white text-[var(--c-beers-2)] shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, "Products"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("cocktails"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "cocktails" ? "bg-white text-indigo-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Cocktail, { size: 14 }), " Cocktails"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("pitchers"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "pitchers" ? "bg-white text-amber-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Pitcher, { size: 14 }), " Pitchers"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("import"), className: `flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === "import" ? "bg-white text-emerald-600 shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-main)]"}` }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 14 }), " Import")), activeTab !== "import" && /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(Icons.Search, { className: "absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-soft)]", size: 18 }), /* @__PURE__ */ React.createElement("input", { type: "text", placeholder: `SEARCH ${activeTab.toUpperCase()}...`, className: "w-full bg-white border border-[var(--border-soft)] rounded-xl pl-12 pr-4 py-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--c-beers-1)] transition-all font-bold text-sm shadow-sm", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value) }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6 space-y-8 bg-[#F6F1EB]" }, activeTab === "products" ? filteredData.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat.category, className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "sticky top-0 bg-[var(--bg-body)]/95 backdrop-blur-sm py-3 z-10 border-b border-[var(--border-soft)] flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-1 h-4 bg-[var(--c-beers-1)] rounded-full" }), /* @__PURE__ */ React.createElement("h3", { className: "text-[var(--c-beers-2)] font-black text-sm uppercase tracking-[0.2em]" }, cat.category)), /* @__PURE__ */ React.createElement("div", { className: "grid gap-4" }, cat.items.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-white p-6 rounded-2xl border border-[var(--border-soft)] flex flex-col gap-4 shadow-sm hover:border-blue-300 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center pb-2 border-b border-[var(--border-soft)]" }, /* @__PURE__ */ React.createElement("span", { className: "font-black text-[var(--text-main)] text-lg tracking-wide" }, item.name), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-600 font-mono font-black text-xl bg-emerald-50 px-4 py-1 rounded-lg border border-emerald-100" }, "Total: ", item.sales || 0)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, "Bottles/Units"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-[#F6F1EB] border-2 border-[var(--border-soft)] rounded-2xl text-center text-[var(--text-main)] font-mono text-4xl font-black focus:border-[var(--c-beers-1)] outline-none transition-all", value: item.sold_bottles || "", onChange: (e) => handleLocalSalesChange(item, "bottles", e.target.value, cat.category) })), /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, cat.category.includes("Beers") || cat.category.includes("Seltzer") || cat.category.includes("Non Alcoholic") ? "Buckets (x6)" : "Shots"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-[#F6F1EB] border-2 border-[var(--border-soft)] rounded-2xl text-center text-[var(--text-main)] font-mono text-4xl font-black focus:border-[var(--c-beers-1)] outline-none transition-all", value: item.sold_shots || "", onChange: (e) => handleLocalSalesChange(item, "shots", e.target.value, cat.category) })), /* @__PURE__ */ React.createElement("div", { className: "relative group" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] text-[var(--text-soft)] uppercase font-bold block mb-2 tracking-widest text-center" }, "Comps"), /* @__PURE__ */ React.createElement("input", { type: "number", placeholder: "0", className: "w-full h-24 bg-emerald-50/50 border-2 border-emerald-100 rounded-2xl text-center text-emerald-700 font-mono text-4xl font-black focus:border-emerald-500 outline-none transition-all", value: item.sold_comps || "", onChange: (e) => handleLocalSalesChange(item, "comps", e.target.value, cat.category) })))))))) : activeTab === "cocktails" ? renderRecipeList(filteredCocktails) : activeTab === "pitchers" ? renderRecipeList(filteredPitchers) : /* @__PURE__ */ React.createElement(ImportSalesPanel, { data, onBatchUpdate, shotSize, posPrices, onPosApply })));
 };
+const BartenderReportModal = ({ isOpen, onClose, data, logo, notify }) => {
+  if (!isOpen) return null;
+  const h = React.createElement;
+  let shotOz = 1.5;
+  try {
+    const sv = parseFloat(localStorage.getItem("MASTER_SHOT_SIZE"));
+    if (sv > 0) shotOz = sv;
+  } catch (e) {
+  }
+  const isUnitCat = (c) => c.includes("Beers") || c.includes("Seltzer") || c.includes("Non Alcoholic");
+  const isLiquorCat = (c) => c.includes("Premium") || c.includes("Wells");
+  const shortCat = (c) => c.split(" (")[0];
+  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2);
+  const rows = [];
+  data.forEach((cat) => {
+    cat.items.forEach((item) => {
+      const end = (parseFloat(item.bar1) || 0) + (parseFloat(item.bar2) || 0) + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
+      const start = (parseFloat(item.start_bar1) || 0) + (parseFloat(item.start_bar2) || 0) + (parseFloat(item.start_bodega) || 0) + (parseFloat(item.start_barroluco) || 0);
+      const buy = parseFloat(item.purchases) || 0;
+      const sold = parseFloat(item.sales) || 0;
+      const used = start + buy - end;
+      const diff = sold - used;
+      if (!(used > 0 || sold > 0)) return;
+      let eq = "";
+      if (isLiquorCat(cat.category)) {
+        const bottleOz = cat.category.includes("Wells") ? 33.814 : 25.36;
+        eq = Math.round(Math.abs(diff) * bottleOz / shotOz) + " shots";
+      } else if (isUnitCat(cat.category)) {
+        eq = Math.round(Math.abs(diff)) + " units";
+      } else {
+        eq = n2(Math.abs(diff)) + " bottles";
+      }
+      rows.push({ name: item.name, category: cat.category, start, buy, end, used, sold, diff, eq });
+    });
+  });
+  const missing = rows.filter((r) => r.diff < -0.1).sort((a, b) => a.diff - b.diff);
+  const extra = rows.filter((r) => r.diff > 0.1).sort((a, b) => b.diff - a.diff);
+  const okCount = rows.length - missing.length - extra.length;
+  const totalMissing = missing.reduce((s, r) => s + r.diff, 0);
+  const totalExtra = extra.reduce((s, r) => s + r.diff, 0);
+  const dateText = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  const downloadPDF = () => {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const W = 210;
+      doc.setFillColor(168, 97, 43);
+      doc.rect(0, 0, W, 34, "F");
+      doc.setFillColor(233, 169, 99);
+      doc.rect(0, 32, W, 2, "F");
+      let tx = 15;
+      if (logo && logo.startsWith("data:image")) {
+        try {
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(13, 7, 20, 20, 3, 3, "F");
+          doc.addImage(logo, "JPEG", 15, 9, 16, 16);
+          tx = 40;
+        } catch (err) {
+        }
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(255, 255, 255);
+      doc.text("PALMAS TROPICAL ESCAPE", tx, 17);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(250, 230, 205);
+      doc.text("Bartender Report \xB7 Shortages & Extras", tx, 23.5);
+      doc.setFontSize(8.5);
+      doc.text(dateText, tx, 29);
+      const y0 = 42;
+      const card = (x, w, label, value, sub, rgb) => {
+        doc.setFillColor(251, 248, 244);
+        doc.setDrawColor(237, 227, 216);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(x, y0, w, 26, 3, 3, "FD");
+        doc.setFillColor(...rgb);
+        doc.roundedRect(x, y0, 3, 26, 1.5, 1.5, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.setTextColor(138, 114, 98);
+        doc.text(label, x + w / 2, y0 + 7, { align: "center" });
+        doc.setFontSize(16);
+        doc.setTextColor(...rgb);
+        doc.text(value, x + w / 2, y0 + 16.5, { align: "center" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.setTextColor(150);
+        doc.text(sub, x + w / 2, y0 + 22.5, { align: "center" });
+      };
+      card(15, 41, "CHECKED", String(rows.length), "products", [168, 97, 43]);
+      card(60, 41, "MISSING", String(missing.length), n2(totalMissing) + " total", [190, 18, 60]);
+      card(105, 41, "EXTRA", String(extra.length), "+" + n2(totalExtra) + " total", [4, 120, 87]);
+      card(150, 45, "OK", String(okCount), "within +/- 0.10", [90, 80, 70]);
+      let y = y0 + 34;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(80, 70, 60);
+      doc.text("Used = Start + Purchases - End (physical count).  Sold = POS sales.  Difference = Sold - Used.", 15, y);
+      doc.text("Shots are estimated with a " + shotOz + " oz pour.", 15, y + 5);
+      y += 12;
+      const section = (title, note, rgb, list, emptyText) => {
+        doc.setFillColor(...rgb);
+        doc.roundedRect(15, y, 180, 9, 2, 2, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text(title + "  (" + list.length + ")", 19, y + 6.2);
+        y += 13;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(80, 70, 60);
+        doc.text(note, 15, y);
+        y += 3;
+        if (list.length === 0) {
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...rgb);
+          doc.text(emptyText, 15, y + 6);
+          y += 14;
+          return;
+        }
+        doc.autoTable({
+          startY: y,
+          head: [["Product", "Category", "Used", "Sold (POS)", "Difference", "About"]],
+          body: list.map((r) => [r.name, shortCat(r.category), n2(r.used), n2(r.sold), (r.diff > 0 ? "+" : "") + n2(r.diff), "~ " + r.eq]),
+          theme: "grid",
+          headStyles: { fillColor: [42, 28, 19], textColor: 255, fontStyle: "bold", fontSize: 8.5 },
+          styles: { fontSize: 8.5, cellPadding: 2.2, lineColor: [237, 227, 216] },
+          columnStyles: { 0: { fontStyle: "bold" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right", fontStyle: "bold", textColor: rgb }, 5: { halign: "right" } },
+          margin: { left: 15, right: 15 }
+        });
+        y = doc.lastAutoTable.finalY + 10;
+        if (y > 260) {
+          doc.addPage();
+          y = 20;
+        }
+      };
+      section("MISSING", "The bar used more than the POS sold. These pours were not rung in, were spilled, or were given away.", [190, 18, 60], missing, "Nothing missing. Great job!");
+      section("EXTRA", "The POS sold more than the bar used. Check the count and make sure sales were rung on the right product.", [4, 120, 87], extra, "No extras.");
+      const pages = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= pages; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(237, 227, 216);
+        doc.setLineWidth(0.3);
+        doc.line(15, 290, 195, 290);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text("Master Control \xB7 Bartender Report", 15, 295);
+        doc.text("Page " + p + " of " + pages, 195, 295, { align: "right" });
+      }
+      doc.save("Bartender_Report_" + (/* @__PURE__ */ new Date()).toISOString().split("T")[0] + ".pdf");
+      if (notify) notify("BARTENDER REPORT EXPORTED");
+    } catch (err) {
+      console.error(err);
+      alert("Could not create the PDF. Check your internet connection and try again.");
+    }
+  };
+
+  const card = (label, value, sub, color) => h("div", { style: { flex: "1 1 160px", background: "var(--card)", border: "1px solid var(--border-soft)", borderLeft: "4px solid " + color, borderRadius: 16, padding: "14px 16px" } },
+    h("div", { style: { fontSize: 10, fontWeight: 800, letterSpacing: 1.5, color: "var(--text-soft)", textTransform: "uppercase" } }, label),
+    h("div", { style: { fontSize: 28, fontWeight: 900, color, lineHeight: 1.2, marginTop: 4 } }, value),
+    h("div", { style: { fontSize: 12, color: "var(--text-soft)", fontWeight: 600 } }, sub));
+  const th = { textAlign: "right", padding: "10px 12px", fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "var(--text-soft)", textTransform: "uppercase", borderBottom: "1px solid var(--border-soft)" };
+  const td = { textAlign: "right", padding: "10px 12px", fontSize: 14, borderBottom: "1px solid var(--border-soft)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums" };
+  const section = (title, note, color, tint, list, emptyText) => h("div", { style: { background: "var(--card)", border: "1px solid var(--border-soft)", borderRadius: 18, overflow: "hidden", marginBottom: 20 } },
+    h("div", { style: { background: tint, padding: "14px 18px", borderBottom: "1px solid var(--border-soft)" } },
+      h("div", { style: { fontSize: 15, fontWeight: 900, color, letterSpacing: 1 } }, title + "  (" + list.length + ")"),
+      h("div", { style: { fontSize: 12, color: "var(--text-soft)", marginTop: 3, fontWeight: 600 } }, note)),
+    list.length === 0 ? h("div", { style: { padding: 20, fontWeight: 800, color } }, emptyText) : h("div", { style: { overflowX: "auto" } }, h("table", { style: { width: "100%", borderCollapse: "collapse" } },
+      h("thead", null, h("tr", null, h("th", { style: Object.assign({}, th, { textAlign: "left" }) }, "Product"), h("th", { style: th }, "Used"), h("th", { style: th }, "Sold (POS)"), h("th", { style: th }, "Difference"), h("th", { style: th }, "About"))),
+      h("tbody", null, list.map((r) => h("tr", { key: r.category + r.name },
+        h("td", { style: Object.assign({}, td, { textAlign: "left" }) }, h("div", { style: { fontWeight: 800 } }, r.name), h("div", { style: { fontSize: 11, color: "var(--text-soft)", fontWeight: 600 } }, shortCat(r.category))),
+        h("td", { style: td }, n2(r.used)), h("td", { style: td }, n2(r.sold)),
+        h("td", { style: Object.assign({}, td, { color, fontWeight: 900 }) }, (r.diff > 0 ? "+" : "") + n2(r.diff)),
+        h("td", { style: Object.assign({}, td, { color: "var(--text-soft)", fontWeight: 700 }) }, "~ " + r.eq)))))));
+
+  return h("div", { className: "fixed inset-0 z-50 flex flex-col animate-in", style: { background: "var(--bg-body)" } },
+    h("div", { style: { padding: "18px 24px", borderBottom: "1px solid var(--border-soft)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", background: "var(--card)" } },
+      h("div", null,
+        h("div", { style: { fontSize: 24, fontWeight: 900, color: "var(--text-main)", letterSpacing: -0.5 } }, "BARTENDER REPORT"),
+        h("div", { style: { fontSize: 12, color: "var(--text-soft)", fontWeight: 600, marginTop: 2 } }, "Shortages and extras \xB7 " + dateText)),
+      h("div", { style: { display: "flex", gap: 10 } },
+        h("button", { onClick: downloadPDF, style: { background: "linear-gradient(135deg, #D38B48, #A8612B)", color: "#fff", border: "none", borderRadius: 12, padding: "11px 20px", fontWeight: 800, fontSize: 13, letterSpacing: 0.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 } }, h(Icons.Download, { size: 16 }), "Download PDF"),
+        h("button", { onClick: onClose, style: { background: "transparent", color: "var(--text-soft)", border: "1px solid var(--border-soft)", borderRadius: 12, padding: "11px 18px", fontWeight: 800, fontSize: 13, cursor: "pointer" } }, "Close"))),
+    h("div", { style: { flex: 1, overflowY: "auto", padding: 24 } },
+      h("div", { style: { maxWidth: 1000, margin: "0 auto" } },
+        h("div", { style: { display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 14 } },
+          card("Checked", String(rows.length), "products", "#A8612B"),
+          card("Missing", String(missing.length), n2(totalMissing) + " total", "#BE123C"),
+          card("Extra", String(extra.length), "+" + n2(totalExtra) + " total", "#047857"),
+          card("OK", String(okCount), "within \xB1 0.10", "#5E5045")),
+        h("div", { style: { fontSize: 12, color: "var(--text-soft)", fontWeight: 600, marginBottom: 20 } }, "Used = Start + Purchases − End.  Sold = POS sales.  Difference = Sold − Used.  Shots estimated with a " + shotOz + " oz pour."),
+        section("MISSING", "The bar used more than the POS sold. These pours were not rung in, were spilled, or were given away.", "#BE123C", "rgba(244,63,94,0.08)", missing, "Nothing missing. Great job!"),
+        section("EXTRA", "The POS sold more than the bar used. Check the count and make sure sales were rung on the right product.", "#047857", "rgba(16,185,129,0.08)", extra, "No extras."))));
+};
 const Header = ({
   onNewPeriod,
   onClearAll,
@@ -991,7 +1188,8 @@ const Header = ({
   mobileSyncEnabled,
   onToggleMobileSync,
   onShowBottleSpecs,
-  onShowPrices
+  onShowPrices,
+  onShowBartender
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const dateStr = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" });
@@ -1034,6 +1232,9 @@ const Header = ({
     onDownloadPDF();
     setShowMenu(false);
   }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-pink-50 hover:text-pink-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.FileText, { size: 18 }), " Export PDF Report"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    if (onShowBartender) onShowBartender();
+    setShowMenu(false);
+  }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-amber-50 hover:text-amber-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.AlertTriangle, { size: 18 }), " Bartender Report"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     onNewPeriod();
     setShowMenu(false);
   }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.ArrowRight, { size: 18 }), " End Period / Start New"), /* @__PURE__ */ React.createElement("div", { className: "h-px bg-[#F6F1EB] my-1 mx-2" }), /* @__PURE__ */ React.createElement("button", { onClick: () => {
@@ -1509,6 +1710,7 @@ function App() {
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [showBottleSpecs, setShowBottleSpecs] = useState(false);
   const [showPrices, setShowPrices] = useState(false);
+  const [showBartender, setShowBartender] = useState(false);
   const [posPrices, setPosPrices] = useState(DEFAULT_POS_PRICES);
   const [posSold, setPosSold] = useState({});
   const POS_LOCAL_KEY = "bar-pos-extra-v1";
@@ -2433,7 +2635,8 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
         setSecurityCode("");
         setShowSpecsSecurity(true);
       },
-      onShowPrices: () => setShowPrices(true)
+      onShowPrices: () => setShowPrices(true),
+      onShowBartender: () => setShowBartender(true)
     }
   ), showSearch && /* @__PURE__ */ React.createElement("div", { className: "bg-white p-4 border-b border-[var(--border-soft)] animate-in" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-6xl mx-auto relative flex gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1" }, /* @__PURE__ */ React.createElement(Icons.Search, { className: "absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-soft)]", size: 20 }), /* @__PURE__ */ React.createElement("input", { type: "text", placeholder: "QUERY DATABASE...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "w-full bg-[#F1F4F9] rounded-xl pl-12 pr-4 py-4 text-[var(--text-main)] border border-[var(--border-soft)] focus:outline-none focus:border-[var(--c-beers-1)] transition-all text-sm", autoFocus: true })), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     setShowSearch(false);
@@ -2445,7 +2648,7 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
     const r = computePosApply(rows, posPrices, posSold, upd);
     savePosExtra(r.newPrices, r.newSold);
     return r;
-  } }), showCountReview && /* @__PURE__ */ React.createElement(CountReviewModal, { isOpen: showCountReview, onClose: () => setShowCountReview(false), data, onUpdate: updateItem }), /* @__PURE__ */ React.createElement(PremiumControlModal, { isOpen: showPremiumModal, onClose: () => setShowPremiumModal(false), data, onUpdateStickers: updateItemStickers }), /* @__PURE__ */ React.createElement(BottleSpecsModal, { isOpen: showBottleSpecs, onClose: () => setShowBottleSpecs(false), data, onUpdate: updateItem }), showPrices && /* @__PURE__ */ React.createElement(PricesModal, { onClose: () => setShowPrices(false), data, posPrices, onSavePos: (pp) => savePosExtra(pp, posSold), onSave: (ups, pp) => {
+  } }), showCountReview && /* @__PURE__ */ React.createElement(CountReviewModal, { isOpen: showCountReview, onClose: () => setShowCountReview(false), data, onUpdate: updateItem }), showBartender && /* @__PURE__ */ React.createElement(BartenderReportModal, { isOpen: showBartender, onClose: () => setShowBartender(false), data, logo, notify: showNotification }), /* @__PURE__ */ React.createElement(PremiumControlModal, { isOpen: showPremiumModal, onClose: () => setShowPremiumModal(false), data, onUpdateStickers: updateItemStickers }), /* @__PURE__ */ React.createElement(BottleSpecsModal, { isOpen: showBottleSpecs, onClose: () => setShowBottleSpecs(false), data, onUpdate: updateItem }), showPrices && /* @__PURE__ */ React.createElement(PricesModal, { onClose: () => setShowPrices(false), data, posPrices, onSavePos: (pp) => savePosExtra(pp, posSold), onSave: (ups, pp) => {
     if (ups.length) batchUpdateItems(ups);
     if (pp) savePosExtra(pp, posSold);
     setShowPrices(false);
