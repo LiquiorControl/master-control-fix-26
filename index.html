@@ -98,6 +98,8 @@
         ::-webkit-scrollbar-thumb:hover { background: #C9A887 !important; }
         input:focus, select:focus { border-color: #D38B48 !important; outline: 2px solid rgba(211,139,72,0.2) !important; }
         input[type="checkbox"], input[type="radio"] { accent-color: #A8612B; }
+        .pos-card { border-color: #2563EB !important; }
+        .pos-badge { color: #1D4ED8 !important; background-color: #EFF6FF !important; border: 1px solid #93C5FD !important; }
         .bg-premium, .bg-wells, .bg-seltzer, .bg-beers, .bg-wines, .bg-nonalc { box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 18px -12px rgba(90,50,20,0.45) !important; }
     </style>
 </head>
@@ -407,8 +409,8 @@ const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, 
       statusColor = "bg-white border-rose-200 shadow-sm";
       badgeClass = "text-rose-700 bg-rose-50 border border-rose-200 font-bold";
     } else if (diff > 0.1) {
-      statusColor = "bg-white border-[var(--c-beers-1)] shadow-sm";
-      badgeClass = "text-[var(--c-beers-2)] bg-blue-50 border border-blue-200 font-bold";
+      statusColor = "bg-white pos-card shadow-sm";
+      badgeClass = "pos-badge font-bold";
     } else {
       statusColor = "bg-white border-emerald-200 shadow-sm";
       badgeClass = "text-emerald-700 bg-emerald-50 border border-emerald-200 font-bold";
@@ -1060,7 +1062,7 @@ const BartenderReportModal = ({ isOpen, onClose, data, logo, notify }) => {
       };
       card(15, 41, "CHECKED", String(rows.length), "products", [168, 97, 43]);
       card(60, 41, "MISSING", String(missing.length), n2(totalMissing) + " total", [190, 18, 60]);
-      card(105, 41, "EXTRA", String(extra.length), "+" + n2(totalExtra) + " total", [4, 120, 87]);
+      card(105, 41, "EXTRA", String(extra.length), "+" + n2(totalExtra) + " total", [29, 78, 216]);
       card(150, 45, "OK", String(okCount), "within +/- 0.10", [90, 80, 70]);
       let y = y0 + 34;
       doc.setFont("helvetica", "normal");
@@ -1106,7 +1108,7 @@ const BartenderReportModal = ({ isOpen, onClose, data, logo, notify }) => {
         }
       };
       section("MISSING", "The bar used more than the POS sold. These pours were not rung in, were spilled, or were given away.", [190, 18, 60], missing, "Nothing missing. Great job!");
-      section("EXTRA", "The POS sold more than the bar used. Check the count and make sure sales were rung on the right product.", [4, 120, 87], extra, "No extras.");
+      section("EXTRA", "The POS sold more than the bar used. Check the count and make sure sales were rung on the right product.", [29, 78, 216], extra, "No extras.");
       const pages = doc.internal.getNumberOfPages();
       for (let p = 1; p <= pages; p++) {
         doc.setPage(p);
@@ -1158,11 +1160,250 @@ const BartenderReportModal = ({ isOpen, onClose, data, logo, notify }) => {
         h("div", { style: { display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 14 } },
           card("Checked", String(rows.length), "products", "#A8612B"),
           card("Missing", String(missing.length), n2(totalMissing) + " total", "#BE123C"),
-          card("Extra", String(extra.length), "+" + n2(totalExtra) + " total", "#047857"),
+          card("Extra", String(extra.length), "+" + n2(totalExtra) + " total", "#1D4ED8"),
           card("OK", String(okCount), "within \xB1 0.10", "#5E5045")),
         h("div", { style: { fontSize: 12, color: "var(--text-soft)", fontWeight: 600, marginBottom: 20 } }, "Used = Start + Purchases − End.  Sold = POS sales.  Difference = Sold − Used.  Shots estimated with a " + shotOz + " oz pour."),
         section("MISSING", "The bar used more than the POS sold. These pours were not rung in, were spilled, or were given away.", "#BE123C", "rgba(244,63,94,0.08)", missing, "Nothing missing. Great job!"),
-        section("EXTRA", "The POS sold more than the bar used. Check the count and make sure sales were rung on the right product.", "#047857", "rgba(16,185,129,0.08)", extra, "No extras."))));
+        section("EXTRA", "The POS sold more than the bar used. Check the count and make sure sales were rung on the right product.", "#1D4ED8", "rgba(37,99,235,0.08)", extra, "No extras."))));
+};
+const downloadLossCostPDF = (data, logo, notify) => {
+  try {
+    const keepCat = (c) => c.includes("Premium") || c.includes("Wells") || c.includes("Seltzer") || c.includes("Beers");
+    const shortCat = (c) => c.split(" (")[0];
+    const money = (v) => "$" + (v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const qtyText = (q, cat) => cat.includes("Beers") || cat.includes("Seltzer") ? Math.round(q) + (Math.round(q) === 1 ? " unit" : " units") : q.toFixed(2) + " btl";
+    const missing = [];
+    const extra = [];
+    data.forEach((cat) => {
+      if (!keepCat(cat.category)) return;
+      cat.items.forEach((item) => {
+        const end = (parseFloat(item.bar1) || 0) + (parseFloat(item.bar2) || 0) + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
+        const start = (parseFloat(item.start_bar1) || 0) + (parseFloat(item.start_bar2) || 0) + (parseFloat(item.start_bodega) || 0) + (parseFloat(item.start_barroluco) || 0);
+        const buy = parseFloat(item.purchases) || 0;
+        const sold = parseFloat(item.sales) || 0;
+        const used = start + buy - end;
+        const diff = Math.round((sold - used) * 100) / 100;
+        if (!(used > 0 || sold > 0) || Math.abs(diff) <= 0.1) return;
+        const unit = getUnitCost(item);
+        const row = { name: item.name, category: cat.category, qty: Math.abs(diff), unit, value: Math.round(Math.abs(diff) * unit * 100) / 100 };
+        (diff < 0 ? missing : extra).push(row);
+      });
+    });
+    missing.sort((a, b) => b.value - a.value);
+    extra.sort((a, b) => b.value - a.value);
+    const totalMissing = missing.reduce((s, r) => s + r.value, 0);
+    const totalExtra = extra.reduce((s, r) => s + r.value, 0);
+    const net = totalExtra - totalMissing;
+    const netText = (net < 0 ? "-" : "+") + money(Math.abs(net));
+    const unpriced = missing.concat(extra).filter((r) => !(r.unit > 0)).map((r) => r.name);
+    const dateText = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const W = 210;
+    const drawHeader = () => {
+      doc.setFillColor(168, 97, 43);
+      doc.rect(0, 0, W, 34, "F");
+      doc.setFillColor(233, 169, 99);
+      doc.rect(0, 32, W, 2, "F");
+      let tx = 15;
+      if (logo && logo.startsWith("data:image")) {
+        try {
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(13, 7, 20, 20, 3, 3, "F");
+          doc.addImage(logo, "JPEG", 15, 9, 16, 16);
+          tx = 40;
+        } catch (err) {
+        }
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(255, 255, 255);
+      doc.text("PALMAS TROPICAL ESCAPE", tx, 16);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(250, 230, 205);
+      doc.text("Loss Cost Report \xB7 Premium, Wells, Seltzer & Beers", tx, 22.5);
+      doc.setFontSize(8.5);
+      doc.text(dateText, tx, 28);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.text("NET RESULT", 195, 12, { align: "right" });
+      doc.setFontSize(16);
+      doc.setTextColor(255, 255, 255);
+      doc.text(netText, 195, 21, { align: "right" });
+    };
+    drawHeader();
+    const y0 = 42;
+    const card = (x, w, label, value, sub, rgb, tint) => {
+      doc.setFillColor(...tint);
+      doc.setDrawColor(237, 227, 216);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(x, y0, w, 26, 3, 3, "FD");
+      doc.setFillColor(...rgb);
+      doc.roundedRect(x, y0, 3, 26, 1.5, 1.5, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(138, 114, 98);
+      doc.text(label, x + w / 2, y0 + 7, { align: "center" });
+      doc.setFontSize(17);
+      doc.setTextColor(...rgb);
+      doc.text(value, x + w / 2, y0 + 16.5, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(150);
+      doc.text(sub, x + w / 2, y0 + 22.5, { align: "center" });
+    };
+    card(15, 57, "SHORTAGES (LOSS)", money(totalMissing), missing.length + " products", [190, 18, 60], [255, 241, 242]);
+    card(76, 57, "EXTRAS", money(totalExtra), extra.length + " products", [29, 78, 216], [239, 246, 255]);
+    card(137, 58, "NET", netText, "extras minus shortages", [168, 97, 43], [251, 248, 244]);
+    let y = y0 + 34;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(120, 100, 85);
+    doc.text("Quantities from the current inventory period. Cost = what you pay per bottle or case (Product Prices),", 15, y);
+    doc.text("divided by the units in the case. Includes Premium Liquor, Wells, Seltzer & Energy and Beers.", 15, y + 4.5);
+    y += 12;
+    const section = (title, note, rgb, tint, list, total, emptyText) => {
+      if (y > 245) {
+        doc.addPage();
+        drawHeader();
+        y = 44;
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(...rgb);
+      doc.text(title, 15, y);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(120, 100, 85);
+      doc.text(note, 15, y + 5);
+      y += 8;
+      if (list.length === 0) {
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...rgb);
+        doc.text(emptyText, 15, y + 6);
+        y += 16;
+        return;
+      }
+      const body = list.map((r) => [r.name, shortCat(r.category), qtyText(r.qty, r.category), r.unit > 0 ? money(r.unit) : "no price", money(r.value)]);
+      body.push([{ content: "TOTAL", colSpan: 4, styles: { halign: "right", fontStyle: "bold", fillColor: tint, textColor: rgb, fontSize: 10 } }, { content: money(total), styles: { halign: "right", fontStyle: "bold", fillColor: tint, textColor: rgb, fontSize: 10 } }]);
+      doc.autoTable({
+        startY: y,
+        head: [["Product", "Category", "Quantity", "Unit Cost", "Total $"]],
+        body,
+        theme: "plain",
+        headStyles: { fillColor: [42, 28, 19], textColor: 255, fontStyle: "bold", fontSize: 8.5 },
+        styles: { fontSize: 9, cellPadding: 2.4, lineColor: [237, 227, 216], lineWidth: { bottom: 0.3 } },
+        alternateRowStyles: { fillColor: [251, 248, 244] },
+        columnStyles: { 0: { fontStyle: "bold", cellWidth: 62 }, 1: { textColor: [138, 114, 98] }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right", fontStyle: "bold", textColor: rgb } },
+        margin: { left: 15, right: 15, top: 44 },
+        didDrawPage: () => {
+          drawHeader();
+        }
+      });
+      y = doc.lastAutoTable.finalY + 12;
+    };
+    section("SHORTAGES", "The bar used more than the POS sold: real loss for the bar.", [190, 18, 60], [255, 241, 242], missing, totalMissing, "No shortages.");
+    section("EXTRAS", "The POS sold more than the bar used: check the count or sales rung on another product.", [29, 78, 216], [239, 246, 255], extra, totalExtra, "No extras.");
+    if (unpriced.length > 0) {
+      if (y > 270) {
+        doc.addPage();
+        drawHeader();
+        y = 44;
+      }
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(190, 18, 60);
+      doc.text(doc.splitTextToSize("No price set (counted as $0.00): " + unpriced.join(", ") + ". Add them in Settings > Product Prices ($).", 180), 15, y);
+    }
+    const pages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pages; p++) {
+      doc.setPage(p);
+      doc.setDrawColor(237, 227, 216);
+      doc.setLineWidth(0.3);
+      doc.line(15, 290, 195, 290);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text("Master Control \xB7 Loss Cost Report (management only)", 15, 295);
+      doc.text("Page " + p + " of " + pages, 195, 295, { align: "right" });
+    }
+    doc.save("Loss_Cost_Report_" + (/* @__PURE__ */ new Date()).toISOString().split("T")[0] + ".pdf");
+    if (notify) notify("LOSS COST REPORT EXPORTED");
+  } catch (err) {
+    console.error(err);
+    alert("Could not create the PDF. Check your internet connection and try again.");
+  }
+};
+const LossCostReportModal = ({ isOpen, onClose, data, logo, notify }) => {
+  if (!isOpen) return null;
+  const h = React.createElement;
+  const keepCat = (c) => c.includes("Premium") || c.includes("Wells") || c.includes("Seltzer") || c.includes("Beers");
+  const shortCat = (c) => c.split(" (")[0];
+  const money = (v) => "$" + (v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const qtyText = (q, cat) => cat.includes("Beers") || cat.includes("Seltzer") ? Math.round(q) + (Math.round(q) === 1 ? " unit" : " units") : q.toFixed(2) + " btl";
+  const missing = [];
+  const extra = [];
+  data.forEach((cat) => {
+    if (!keepCat(cat.category)) return;
+    cat.items.forEach((item) => {
+      const end = (parseFloat(item.bar1) || 0) + (parseFloat(item.bar2) || 0) + (parseFloat(item.bodega) || 0) + (parseFloat(item.barroluco) || 0);
+      const start = (parseFloat(item.start_bar1) || 0) + (parseFloat(item.start_bar2) || 0) + (parseFloat(item.start_bodega) || 0) + (parseFloat(item.start_barroluco) || 0);
+      const buy = parseFloat(item.purchases) || 0;
+      const sold = parseFloat(item.sales) || 0;
+      const used = start + buy - end;
+      const diff = Math.round((sold - used) * 100) / 100;
+      if (!(used > 0 || sold > 0) || Math.abs(diff) <= 0.1) return;
+      const unit = getUnitCost(item);
+      const row = { name: item.name, category: cat.category, qty: Math.abs(diff), unit, value: Math.round(Math.abs(diff) * unit * 100) / 100 };
+      (diff < 0 ? missing : extra).push(row);
+    });
+  });
+  missing.sort((a, b) => b.value - a.value);
+  extra.sort((a, b) => b.value - a.value);
+  const totalMissing = missing.reduce((s, r) => s + r.value, 0);
+  const totalExtra = extra.reduce((s, r) => s + r.value, 0);
+  const net = totalExtra - totalMissing;
+  const netText = (net < 0 ? "-" : "+") + money(Math.abs(net));
+  const unpriced = missing.concat(extra).filter((r) => !(r.unit > 0)).map((r) => r.name);
+  const dateText = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const card = (label, value, sub, color, tint) => h("div", { style: { flex: "1 1 200px", background: tint, border: "1px solid var(--border-soft)", borderLeft: "4px solid " + color, borderRadius: 16, padding: "14px 16px" } },
+    h("div", { style: { fontSize: 10, fontWeight: 800, letterSpacing: 1.5, color: "var(--text-soft)", textTransform: "uppercase" } }, label),
+    h("div", { style: { fontSize: 30, fontWeight: 900, color, lineHeight: 1.2, marginTop: 4, fontVariantNumeric: "tabular-nums" } }, value),
+    h("div", { style: { fontSize: 12, color: "var(--text-soft)", fontWeight: 600 } }, sub));
+  const th = { textAlign: "right", padding: "10px 12px", fontSize: 10, fontWeight: 800, letterSpacing: 1, color: "var(--text-soft)", textTransform: "uppercase", borderBottom: "1px solid var(--border-soft)" };
+  const td = { textAlign: "right", padding: "10px 12px", fontSize: 14, borderBottom: "1px solid var(--border-soft)", color: "var(--text-main)", fontVariantNumeric: "tabular-nums" };
+  const section = (title, note, color, tint, list, total, emptyText) => h("div", { style: { background: "var(--card)", border: "1px solid var(--border-soft)", borderRadius: 18, overflow: "hidden", marginBottom: 20 } },
+    h("div", { style: { background: tint, padding: "14px 18px", borderBottom: "1px solid var(--border-soft)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 } },
+      h("div", null,
+        h("div", { style: { fontSize: 15, fontWeight: 900, color, letterSpacing: 1 } }, title + "  (" + list.length + ")"),
+        h("div", { style: { fontSize: 12, color: "var(--text-soft)", marginTop: 3, fontWeight: 600 } }, note)),
+      h("div", { style: { fontSize: 22, fontWeight: 900, color, fontVariantNumeric: "tabular-nums" } }, money(total))),
+    list.length === 0 ? h("div", { style: { padding: 20, fontWeight: 800, color } }, emptyText) : h("div", { style: { overflowX: "auto" } }, h("table", { style: { width: "100%", borderCollapse: "collapse" } },
+      h("thead", null, h("tr", null, h("th", { style: Object.assign({}, th, { textAlign: "left" }) }, "Product"), h("th", { style: th }, "Quantity"), h("th", { style: th }, "Unit Cost"), h("th", { style: th }, "Total $"))),
+      h("tbody", null, list.map((r) => h("tr", { key: r.category + r.name },
+        h("td", { style: Object.assign({}, td, { textAlign: "left" }) }, h("div", { style: { fontWeight: 800 } }, r.name), h("div", { style: { fontSize: 11, color: "var(--text-soft)", fontWeight: 600 } }, shortCat(r.category))),
+        h("td", { style: td }, qtyText(r.qty, r.category)),
+        h("td", { style: Object.assign({}, td, r.unit > 0 ? {} : { color: "#BE123C", fontWeight: 700 }) }, r.unit > 0 ? money(r.unit) : "no price"),
+        h("td", { style: Object.assign({}, td, { color, fontWeight: 900 }) }, money(r.value))))))));
+  return h("div", { className: "fixed inset-0 z-50 flex flex-col animate-in", style: { background: "var(--bg-body)" } },
+    h("div", { style: { padding: "18px 24px", borderBottom: "1px solid var(--border-soft)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", background: "var(--card)" } },
+      h("div", null,
+        h("div", { style: { fontSize: 24, fontWeight: 900, color: "var(--text-main)", letterSpacing: -0.5 } }, "LOSS COST REPORT ($)"),
+        h("div", { style: { fontSize: 12, color: "var(--text-soft)", fontWeight: 600, marginTop: 2 } }, "Premium, Wells, Seltzer & Beers \xB7 " + dateText + " \xB7 management only")),
+      h("div", { style: { display: "flex", gap: 10 } },
+        h("button", { onClick: () => downloadLossCostPDF(data, logo, notify), style: { background: "linear-gradient(135deg, #D38B48, #A8612B)", color: "#fff", border: "none", borderRadius: 12, padding: "11px 20px", fontWeight: 800, fontSize: 13, letterSpacing: 0.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 } }, h(Icons.Download, { size: 16 }), "Download PDF"),
+        h("button", { onClick: onClose, style: { background: "transparent", color: "var(--text-soft)", border: "1px solid var(--border-soft)", borderRadius: 12, padding: "11px 18px", fontWeight: 800, fontSize: 13, cursor: "pointer" } }, "Close"))),
+    h("div", { style: { flex: 1, overflowY: "auto", padding: 24 } },
+      h("div", { style: { maxWidth: 1000, margin: "0 auto" } },
+        h("div", { style: { display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 14 } },
+          card("Shortages (loss)", money(totalMissing), missing.length + " products", "#BE123C", "rgba(244,63,94,0.06)"),
+          card("Extras", money(totalExtra), extra.length + " products", "#1D4ED8", "rgba(37,99,235,0.06)"),
+          card("Net", netText, "extras minus shortages", "#A8612B", "var(--card)")),
+        h("div", { style: { fontSize: 12, color: "var(--text-soft)", fontWeight: 600, marginBottom: 20 } }, "Cost = what you pay per bottle or case (Product Prices), divided by the units in the case. Wines and Non Alcoholic are not included."),
+        unpriced.length > 0 && h("div", { style: { background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.3)", color: "#BE123C", borderRadius: 14, padding: "12px 16px", fontSize: 13, fontWeight: 700, marginBottom: 20 } }, "No price set (counted as $0.00): " + unpriced.join(", ") + ". Add them in Settings > Product Prices ($)."),
+        section("SHORTAGES", "The bar used more than the POS sold: real loss for the bar.", "#BE123C", "rgba(244,63,94,0.08)", missing, totalMissing, "No shortages. Great job!"),
+        section("EXTRAS", "The POS sold more than the bar used: check the count or sales rung on another product.", "#1D4ED8", "rgba(37,99,235,0.08)", extra, totalExtra, "No extras."))));
 };
 const Header = ({
   onNewPeriod,
@@ -1189,7 +1430,8 @@ const Header = ({
   onToggleMobileSync,
   onShowBottleSpecs,
   onShowPrices,
-  onShowBartender
+  onShowBartender,
+  onDownloadLossCost
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const dateStr = (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" });
@@ -1235,6 +1477,9 @@ const Header = ({
     if (onShowBartender) onShowBartender();
     setShowMenu(false);
   }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-amber-50 hover:text-amber-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.AlertTriangle, { size: 18 }), " Bartender Report"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    if (onDownloadLossCost) onDownloadLossCost();
+    setShowMenu(false);
+  }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-rose-50 hover:text-rose-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.DollarSign, { size: 18 }), " Loss Cost Report ($)"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     onNewPeriod();
     setShowMenu(false);
   }, className: "flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 text-[var(--text-soft)] transition-all text-sm font-medium text-left" }, /* @__PURE__ */ React.createElement(Icons.ArrowRight, { size: 18 }), " End Period / Start New"), /* @__PURE__ */ React.createElement("div", { className: "h-px bg-[#F6F1EB] my-1 mx-2" }), /* @__PURE__ */ React.createElement("button", { onClick: () => {
@@ -1711,6 +1956,7 @@ function App() {
   const [showBottleSpecs, setShowBottleSpecs] = useState(false);
   const [showPrices, setShowPrices] = useState(false);
   const [showBartender, setShowBartender] = useState(false);
+  const [showLossCost, setShowLossCost] = useState(false);
   const [posPrices, setPosPrices] = useState(DEFAULT_POS_PRICES);
   const [posSold, setPosSold] = useState({});
   const POS_LOCAL_KEY = "bar-pos-extra-v1";
@@ -2636,7 +2882,8 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
         setShowSpecsSecurity(true);
       },
       onShowPrices: () => setShowPrices(true),
-      onShowBartender: () => setShowBartender(true)
+      onShowBartender: () => setShowBartender(true),
+      onDownloadLossCost: () => setShowLossCost(true)
     }
   ), showSearch && /* @__PURE__ */ React.createElement("div", { className: "bg-white p-4 border-b border-[var(--border-soft)] animate-in" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-6xl mx-auto relative flex gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1" }, /* @__PURE__ */ React.createElement(Icons.Search, { className: "absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-soft)]", size: 20 }), /* @__PURE__ */ React.createElement("input", { type: "text", placeholder: "QUERY DATABASE...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "w-full bg-[#F1F4F9] rounded-xl pl-12 pr-4 py-4 text-[var(--text-main)] border border-[var(--border-soft)] focus:outline-none focus:border-[var(--c-beers-1)] transition-all text-sm", autoFocus: true })), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     setShowSearch(false);
@@ -2648,7 +2895,7 @@ PRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF
     const r = computePosApply(rows, posPrices, posSold, upd);
     savePosExtra(r.newPrices, r.newSold);
     return r;
-  } }), showCountReview && /* @__PURE__ */ React.createElement(CountReviewModal, { isOpen: showCountReview, onClose: () => setShowCountReview(false), data, onUpdate: updateItem }), showBartender && /* @__PURE__ */ React.createElement(BartenderReportModal, { isOpen: showBartender, onClose: () => setShowBartender(false), data, logo, notify: showNotification }), /* @__PURE__ */ React.createElement(PremiumControlModal, { isOpen: showPremiumModal, onClose: () => setShowPremiumModal(false), data, onUpdateStickers: updateItemStickers }), /* @__PURE__ */ React.createElement(BottleSpecsModal, { isOpen: showBottleSpecs, onClose: () => setShowBottleSpecs(false), data, onUpdate: updateItem }), showPrices && /* @__PURE__ */ React.createElement(PricesModal, { onClose: () => setShowPrices(false), data, posPrices, onSavePos: (pp) => savePosExtra(pp, posSold), onSave: (ups, pp) => {
+  } }), showCountReview && /* @__PURE__ */ React.createElement(CountReviewModal, { isOpen: showCountReview, onClose: () => setShowCountReview(false), data, onUpdate: updateItem }), showBartender && /* @__PURE__ */ React.createElement(BartenderReportModal, { isOpen: showBartender, onClose: () => setShowBartender(false), data, logo, notify: showNotification }), showLossCost && /* @__PURE__ */ React.createElement(LossCostReportModal, { isOpen: showLossCost, onClose: () => setShowLossCost(false), data, logo, notify: showNotification }), /* @__PURE__ */ React.createElement(PremiumControlModal, { isOpen: showPremiumModal, onClose: () => setShowPremiumModal(false), data, onUpdateStickers: updateItemStickers }), /* @__PURE__ */ React.createElement(BottleSpecsModal, { isOpen: showBottleSpecs, onClose: () => setShowBottleSpecs(false), data, onUpdate: updateItem }), showPrices && /* @__PURE__ */ React.createElement(PricesModal, { onClose: () => setShowPrices(false), data, posPrices, onSavePos: (pp) => savePosExtra(pp, posSold), onSave: (ups, pp) => {
     if (ups.length) batchUpdateItems(ups);
     if (pp) savePosExtra(pp, posSold);
     setShowPrices(false);
